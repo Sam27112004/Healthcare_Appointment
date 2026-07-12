@@ -1,4 +1,5 @@
 import uuid
+from datetime import date, datetime, timedelta
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -316,3 +317,82 @@ class AdminService:
             slot.status = SlotStatus.AVAILABLE.value
 
         await self.db.commit()
+
+    # ================= Slot Generation =================
+
+    async def generate_slots(self, doctor_id: uuid.UUID, start_date: date, end_date: date) -> int:
+        if start_date > end_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="start_date must be before end_date")
+        
+        # Limit generation to 60 days max to prevent overload
+        if (end_date - start_date).days > 60:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot generate slots for more than 60 days at a time")
+
+        await self._get_doctor_with_rels(doctor_id)
+
+        # Get all schedules for doctor
+        schedule_stmt = select(DoctorSchedule).where(DoctorSchedule.doctor_id == doctor_id)
+        schedules = (await self.db.execute(schedule_stmt)).scalars().all()
+        
+        if not schedules:
+            return 0 # No schedules, no slots to generate
+
+        # Map schedules by day_of_week for O(1) lookup
+        schedules_by_day = {i: [] for i in range(7)}
+        for s in schedules:
+            schedules_by_day[s.day_of_week].append(s)
+
+        # Get all leaves for the doctor in this date range
+        leave_stmt = select(DoctorLeave).where(
+            DoctorLeave.doctor_id == doctor_id,
+            DoctorLeave.leave_date >= start_date,
+            DoctorLeave.leave_date <= end_date
+        )
+        leaves = (await self.db.execute(leave_stmt)).scalars().all()
+        leave_dates = {l.leave_date for l in leaves}
+
+        slots_created = 0
+        current_date = start_date
+
+        while current_date <= end_date:
+            day_of_week = current_date.weekday() # 0 = Monday, 6 = Sunday
+            daily_schedules = schedules_by_day[day_of_week]
+
+            for sched in daily_schedules:
+                # Iterate from start_time to end_time
+                current_time = datetime.combine(current_date, sched.start_time)
+                end_time = datetime.combine(current_date, sched.end_time)
+                duration = timedelta(minutes=sched.slot_duration)
+
+                while current_time + duration <= end_time:
+                    slot_start = current_time.time()
+                    slot_end = (current_time + duration).time()
+                    
+                    # Check if slot already exists
+                    existing_stmt = select(AppointmentSlot).where(
+                        AppointmentSlot.doctor_id == doctor_id,
+                        AppointmentSlot.slot_date == current_date,
+                        AppointmentSlot.start_time == slot_start
+                    )
+                    existing_slot = (await self.db.execute(existing_stmt)).scalar_one_or_none()
+                    
+                    if not existing_slot:
+                        # Create the slot
+                        status_val = SlotStatus.BLOCKED.value if current_date in leave_dates else SlotStatus.AVAILABLE.value
+                        
+                        new_slot = AppointmentSlot(
+                            doctor_id=doctor_id,
+                            slot_date=current_date,
+                            start_time=slot_start,
+                            end_time=slot_end,
+                            status=status_val
+                        )
+                        self.db.add(new_slot)
+                        slots_created += 1
+
+                    current_time += duration
+
+            current_date += timedelta(days=1)
+
+        await self.db.commit()
+        return slots_created

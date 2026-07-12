@@ -75,3 +75,11 @@ class LeaveResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SlotGenerateRequest(BaseModel):
+    start_date: date
+    end_date: date
+
+class SlotGenerateResponse(BaseModel):
+    slots_created: int
+    message: str

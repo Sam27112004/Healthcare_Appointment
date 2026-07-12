@@ -5,7 +5,7 @@ from typing import List
 from app.admin.schemas import (
     SpecializationCreate, SpecializationUpdate, SpecializationResponse, 
     DoctorCreate, DoctorUpdate, ScheduleCreate, ScheduleUpdate, ScheduleResponse,
-    LeaveCreate, LeaveResponse
+    LeaveCreate, LeaveResponse, SlotGenerateRequest, SlotGenerateResponse
 )
 from app.admin.service import AdminService
 from app.auth.dependencies import get_db, require_role
@@ -148,3 +148,23 @@ async def delete_leave(
     """Remove a leave entry (unblocks slots)."""
     service = AdminService(db)
     await service.delete_leave(doctor_id, leave_id)
+
+# ================= Slot Generation =================
+
+@router.post("/doctors/{doctor_id}/generate-slots", response_model=SlotGenerateResponse, status_code=status.HTTP_200_OK)
+async def generate_slots(
+    doctor_id: uuid.UUID,
+    data: SlotGenerateRequest,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """
+    Manually generate AppointmentSlot rows for a doctor based on their weekly schedule
+    and leaves, for a given date range.
+    """
+    service = AdminService(db)
+    slots_created = await service.generate_slots(doctor_id, data.start_date, data.end_date)
+    return SlotGenerateResponse(
+        slots_created=slots_created,
+        message=f"Successfully generated {slots_created} slots."
+    )
