@@ -2,7 +2,11 @@ import uuid
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from app.admin.schemas import SpecializationCreate, SpecializationUpdate, SpecializationResponse, DoctorCreate, DoctorUpdate
+from app.admin.schemas import (
+    SpecializationCreate, SpecializationUpdate, SpecializationResponse, 
+    DoctorCreate, DoctorUpdate, ScheduleCreate, ScheduleUpdate, ScheduleResponse,
+    LeaveCreate, LeaveResponse
+)
 from app.admin.service import AdminService
 from app.auth.dependencies import get_db, require_role
 from app.schemas.common import PaginatedResponse
@@ -97,3 +101,50 @@ async def deactivate_doctor(
     """Deactivate a doctor (soft delete)."""
     service = AdminService(db)
     await service.deactivate_doctor(doctor_id)
+
+# ================= Doctor Schedule & Leave =================
+
+@router.post("/doctors/{doctor_id}/schedule", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED)
+async def create_schedule(
+    doctor_id: uuid.UUID,
+    data: ScheduleCreate,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Add a weekly recurring schedule for a doctor."""
+    service = AdminService(db)
+    return await service.create_schedule(doctor_id, data)
+
+@router.put("/doctors/{doctor_id}/schedule/{schedule_id}", response_model=ScheduleResponse, status_code=status.HTTP_200_OK)
+async def update_schedule(
+    doctor_id: uuid.UUID,
+    schedule_id: uuid.UUID,
+    data: ScheduleUpdate,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Update a doctor's schedule."""
+    service = AdminService(db)
+    return await service.update_schedule(doctor_id, schedule_id, data)
+
+@router.post("/doctors/{doctor_id}/leave", response_model=LeaveResponse, status_code=status.HTTP_201_CREATED)
+async def create_leave(
+    doctor_id: uuid.UUID,
+    data: LeaveCreate,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Mark a doctor on leave for a specific date (blocks available slots)."""
+    service = AdminService(db)
+    return await service.create_leave(doctor_id, data)
+
+@router.delete("/doctors/{doctor_id}/leave/{leave_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_leave(
+    doctor_id: uuid.UUID,
+    leave_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Remove a leave entry (unblocks slots)."""
+    service = AdminService(db)
+    await service.delete_leave(doctor_id, leave_id)

@@ -6,9 +6,14 @@ from sqlalchemy import func
 from sqlalchemy.orm import selectinload, joinedload
 from app.models.specialization import Specialization
 from app.models.user import Doctor, User
-from app.admin.schemas import SpecializationCreate, SpecializationUpdate, DoctorCreate, DoctorUpdate
+from app.models.schedule import DoctorSchedule, DoctorLeave
+from app.models.slot import AppointmentSlot
+from app.admin.schemas import (
+    SpecializationCreate, SpecializationUpdate, DoctorCreate, DoctorUpdate,
+    ScheduleCreate, ScheduleUpdate, LeaveCreate
+)
 from app.auth.security import get_password_hash
-from app.schemas.enums import Role
+from app.schemas.enums import Role, SlotStatus
 from app.schemas.common import PaginatedResponse
 from app.doctor.schemas import DoctorProfile
 
@@ -189,4 +194,125 @@ class AdminService:
     async def deactivate_doctor(self, doctor_id: uuid.UUID) -> None:
         doctor = await self._get_doctor_with_rels(doctor_id)
         doctor.user.is_active = False
+        await self.db.commit()
+
+    # ================= Schedule & Leave Management =================
+
+    async def create_schedule(self, doctor_id: uuid.UUID, data: ScheduleCreate) -> DoctorSchedule:
+        # Check if doctor exists
+        await self._get_doctor_with_rels(doctor_id)
+
+        if data.start_time >= data.end_time:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be before end time")
+
+        # Check for overlapping schedules on the same day for this doctor
+        stmt = select(DoctorSchedule).where(
+            DoctorSchedule.doctor_id == doctor_id,
+            DoctorSchedule.day_of_week == data.day_of_week
+        )
+        existing_schedules = (await self.db.execute(stmt)).scalars().all()
+        for sched in existing_schedules:
+            if not (data.end_time <= sched.start_time or data.start_time >= sched.end_time):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Schedule overlaps with an existing schedule for this day")
+
+        schedule = DoctorSchedule(
+            doctor_id=doctor_id,
+            day_of_week=data.day_of_week,
+            start_time=data.start_time,
+            end_time=data.end_time,
+            slot_duration=data.slot_duration
+        )
+        self.db.add(schedule)
+        await self.db.commit()
+        await self.db.refresh(schedule)
+        return schedule
+
+    async def update_schedule(self, doctor_id: uuid.UUID, schedule_id: uuid.UUID, data: ScheduleUpdate) -> DoctorSchedule:
+        stmt = select(DoctorSchedule).where(DoctorSchedule.id == schedule_id, DoctorSchedule.doctor_id == doctor_id)
+        schedule = (await self.db.execute(stmt)).scalar_one_or_none()
+        
+        if not schedule:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found")
+
+        # Create temporary variables to check overlaps and logic
+        new_start = data.start_time if data.start_time is not None else schedule.start_time
+        new_end = data.end_time if data.end_time is not None else schedule.end_time
+
+        if new_start >= new_end:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be before end time")
+
+        if data.start_time or data.end_time:
+            overlap_stmt = select(DoctorSchedule).where(
+                DoctorSchedule.doctor_id == doctor_id,
+                DoctorSchedule.day_of_week == schedule.day_of_week,
+                DoctorSchedule.id != schedule_id
+            )
+            existing_schedules = (await self.db.execute(overlap_stmt)).scalars().all()
+            for sched in existing_schedules:
+                if not (new_end <= sched.start_time or new_start >= sched.end_time):
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Updated schedule overlaps with another schedule")
+
+        if data.start_time is not None:
+            schedule.start_time = data.start_time
+        if data.end_time is not None:
+            schedule.end_time = data.end_time
+        if data.slot_duration is not None:
+            schedule.slot_duration = data.slot_duration
+
+        await self.db.commit()
+        await self.db.refresh(schedule)
+        return schedule
+
+    async def create_leave(self, doctor_id: uuid.UUID, data: LeaveCreate) -> DoctorLeave:
+        await self._get_doctor_with_rels(doctor_id)
+
+        # Check if already on leave
+        stmt = select(DoctorLeave).where(DoctorLeave.doctor_id == doctor_id, DoctorLeave.leave_date == data.leave_date)
+        if (await self.db.execute(stmt)).scalar_one_or_none():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor is already on leave for this date")
+
+        # Mark leave
+        leave = DoctorLeave(
+            doctor_id=doctor_id,
+            leave_date=data.leave_date,
+            reason=data.reason
+        )
+        self.db.add(leave)
+
+        # Block affected slots
+        slot_stmt = select(AppointmentSlot).where(
+            AppointmentSlot.doctor_id == doctor_id,
+            AppointmentSlot.slot_date == data.leave_date,
+            AppointmentSlot.status == SlotStatus.AVAILABLE.value
+        ).with_for_update() # Protect from concurrent booking while blocking
+        
+        slots = (await self.db.execute(slot_stmt)).scalars().all()
+        for slot in slots:
+            slot.status = SlotStatus.BLOCKED.value
+
+        # TODO: Trigger Celery task to email patients with booked appointments on this day
+
+        await self.db.commit()
+        await self.db.refresh(leave)
+        return leave
+
+    async def delete_leave(self, doctor_id: uuid.UUID, leave_id: uuid.UUID) -> None:
+        stmt = select(DoctorLeave).where(DoctorLeave.id == leave_id, DoctorLeave.doctor_id == doctor_id)
+        leave = (await self.db.execute(stmt)).scalar_one_or_none()
+        if not leave:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Leave not found")
+            
+        self.db.delete(leave)
+        
+        # Unblock slots
+        slot_stmt = select(AppointmentSlot).where(
+            AppointmentSlot.doctor_id == doctor_id,
+            AppointmentSlot.slot_date == leave.leave_date,
+            AppointmentSlot.status == SlotStatus.BLOCKED.value
+        ).with_for_update()
+        
+        slots = (await self.db.execute(slot_stmt)).scalars().all()
+        for slot in slots:
+            slot.status = SlotStatus.AVAILABLE.value
+
         await self.db.commit()
