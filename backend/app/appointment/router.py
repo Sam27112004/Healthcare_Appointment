@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.appointment.schemas import SlotHoldRequest, SlotHoldResponse
+from app.appointment.schemas import SlotHoldRequest, SlotHoldResponse, AppointmentCreate, AppointmentResponse
 from app.appointment.service import AppointmentService
 from app.auth.dependencies import get_db, require_role
 from app.models.user import User
@@ -16,3 +16,13 @@ async def hold_appointment_slot(
     """Hold a slot temporarily while the patient fills the symptom form."""
     service = AppointmentService(db)
     return await service.hold_slot(current_user.id, data.slot_id)
+
+@router.post("", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
+async def book_appointment(
+    data: AppointmentCreate,
+    current_user: User = Depends(require_role(["patient"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Confirm a booking. Slot must be held by this patient."""
+    service = AppointmentService(db)
+    return await service.book_appointment(current_user.id, data)
