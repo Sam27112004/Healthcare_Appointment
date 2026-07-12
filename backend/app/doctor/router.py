@@ -1,10 +1,11 @@
 import uuid
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.doctor.schemas import DoctorProfile
+from app.doctor.schemas import DoctorProfile, DoctorSlotsResponse
 from app.schemas.common import PaginatedResponse
 from app.doctor.service import DoctorService
 from app.auth.dependencies import get_db, get_current_user
+from datetime import date
 
 router = APIRouter(prefix="/doctors", tags=["Doctors"])
 
@@ -36,3 +37,14 @@ async def get_doctor(
     service = DoctorService(db)
     doctor = await service.get_doctor_profile(doctor_id)
     return DoctorProfile.model_validate(doctor)
+
+@router.get("/{doctor_id}/slots", response_model=DoctorSlotsResponse, status_code=status.HTTP_200_OK)
+async def get_doctor_slots(
+    doctor_id: uuid.UUID,
+    date: date = Query(..., description="ISO 8601 date (e.g., 2026-07-20)"),
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(get_current_user)
+):
+    """Get available slots for a doctor on a specific date."""
+    service = DoctorService(db)
+    return await service.get_doctor_slots(doctor_id, date)

@@ -6,8 +6,10 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload, joinedload
 from app.models.user import Doctor, User
 from app.models.specialization import Specialization
-from app.doctor.schemas import DoctorProfile
+from app.models.slot import AppointmentSlot
+from app.doctor.schemas import DoctorProfile, DoctorSlotsResponse, SlotResponse
 from app.schemas.common import PaginatedResponse
+from datetime import date
 
 class DoctorService:
     def __init__(self, db: AsyncSession):
@@ -85,3 +87,32 @@ class DoctorService:
         items = [DoctorProfile.model_validate(doc) for doc in doctors]
 
         return PaginatedResponse.create(items=items, total=total, page=page, limit=limit)
+
+    async def get_doctor_slots(self, doctor_id: uuid.UUID, slot_date: date) -> DoctorSlotsResponse:
+        # Verify doctor exists
+        stmt = select(Doctor).where(Doctor.id == doctor_id)
+        doctor = (await self.db.execute(stmt)).scalar_one_or_none()
+        if not doctor:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor not found")
+            
+        slot_stmt = select(AppointmentSlot).where(
+            AppointmentSlot.doctor_id == doctor_id,
+            AppointmentSlot.slot_date == slot_date
+        ).order_by(AppointmentSlot.start_time)
+        
+        slots = (await self.db.execute(slot_stmt)).scalars().all()
+        
+        slot_responses = [
+            SlotResponse(
+                id=s.id,
+                start_time=s.start_time,
+                end_time=s.end_time,
+                status=s.status
+            ) for s in slots
+        ]
+        
+        return DoctorSlotsResponse(
+            doctor_id=doctor_id,
+            date=slot_date,
+            slots=slot_responses
+        )

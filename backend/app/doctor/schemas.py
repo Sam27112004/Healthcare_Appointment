@@ -1,7 +1,8 @@
 import uuid
 from decimal import Decimal
 from pydantic import BaseModel
-from app.patient.schemas import UserSummary # Reusing the basic user summary
+from app.patient.schemas import UserSummary
+from datetime import date, time
 
 class SpecializationResponse(BaseModel):
     id: uuid.UUID
@@ -21,3 +22,17 @@ class DoctorProfile(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SlotResponse(BaseModel):
+    id: uuid.UUID
+    start_time: time
+    end_time: time
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class DoctorSlotsResponse(BaseModel):
+    doctor_id: uuid.UUID
+    date: date
+    slots: list[SlotResponse]
