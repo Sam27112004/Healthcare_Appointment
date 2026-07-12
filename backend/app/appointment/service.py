@@ -6,8 +6,9 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.models.slot import AppointmentSlot
 from app.models.appointment import Appointment
-from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse
-from app.schemas.enums import SlotStatus, AppointmentStatus
+from app.models.user import User
+from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse, AppointmentCancelResponse, AppointmentRescheduleResponse
+from app.schemas.enums import SlotStatus, AppointmentStatus, Role
 
 class AppointmentService:
     def __init__(self, db: AsyncSession):
@@ -131,3 +132,121 @@ class AppointmentService:
         # send_booking_confirmation.delay(created_appt.id)
 
         return created_appt
+
+    async def cancel_appointment(self, appointment_id: uuid.UUID, current_user: User, reason: str | None) -> AppointmentCancelResponse:
+        # Lock appointment
+        stmt = select(Appointment).options(selectinload(Appointment.slot)).where(Appointment.id == appointment_id).with_for_update()
+        appointment = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not appointment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
+
+        if current_user.role == Role.PATIENT.value and appointment.patient_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
+            
+        if current_user.role == Role.DOCTOR.value and appointment.doctor_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
+
+        if appointment.status == AppointmentStatus.CANCELLED.value:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment is already cancelled")
+
+        if appointment.status == AppointmentStatus.COMPLETED.value:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot cancel a completed appointment")
+
+        # Update appointment
+        appointment.status = AppointmentStatus.CANCELLED.value
+        appointment.cancellation_reason = reason
+        appointment.cancelled_by = current_user.role
+        
+        # Update slot (need to lock the slot specifically if it wasn't locked with appointment)
+        slot_stmt = select(AppointmentSlot).where(AppointmentSlot.id == appointment.slot_id).with_for_update()
+        slot = (await self.db.execute(slot_stmt)).scalar_one()
+        slot.status = SlotStatus.AVAILABLE.value
+        
+        await self.db.commit()
+
+        # TODO: send cancellation email
+
+        return AppointmentCancelResponse(
+            id=appointment.id,
+            status=appointment.status,
+            cancellation_reason=appointment.cancellation_reason,
+            cancelled_by=appointment.cancelled_by
+        )
+
+    async def reschedule_appointment(self, appointment_id: uuid.UUID, current_user: User, new_slot_id: uuid.UUID) -> AppointmentRescheduleResponse:
+        if current_user.role != Role.PATIENT.value:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only patients can reschedule appointments")
+
+        # 1. Lock appointment
+        stmt = select(Appointment).options(selectinload(Appointment.slot)).where(Appointment.id == appointment_id).with_for_update()
+        appointment = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not appointment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
+
+        if appointment.patient_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to reschedule this appointment")
+
+        if appointment.status in [AppointmentStatus.CANCELLED.value, AppointmentStatus.COMPLETED.value]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Cannot reschedule a {appointment.status} appointment")
+
+        # 2. Lock old slot
+        old_slot_stmt = select(AppointmentSlot).where(AppointmentSlot.id == appointment.slot_id).with_for_update()
+        old_slot = (await self.db.execute(old_slot_stmt)).scalar_one()
+
+        # 3. Lock new slot
+        new_slot_stmt = select(AppointmentSlot).where(AppointmentSlot.id == new_slot_id).with_for_update()
+        new_slot = (await self.db.execute(new_slot_stmt)).scalar_one_or_none()
+
+        if not new_slot:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="New slot not found")
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        
+        # New slot must be available OR held by this patient
+        if new_slot.status not in [SlotStatus.AVAILABLE.value, SlotStatus.HELD.value]:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New slot is not available")
+            
+        if new_slot.status == SlotStatus.HELD.value and (new_slot.held_by_id != current_user.id or not new_slot.held_until or new_slot.held_until < now):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New slot is held by someone else")
+
+        # Optional: Patient overlap validation for the new slot
+        overlap_stmt = (
+            select(Appointment)
+            .join(AppointmentSlot, Appointment.slot_id == AppointmentSlot.id)
+            .where(
+                Appointment.patient_id == current_user.id,
+                Appointment.id != appointment.id,
+                AppointmentSlot.slot_date == new_slot.slot_date,
+                AppointmentSlot.start_time == new_slot.start_time,
+                Appointment.status != AppointmentStatus.CANCELLED.value
+            )
+        )
+        overlap = (await self.db.execute(overlap_stmt)).scalar_one_or_none()
+        if overlap:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You already have an appointment booked for this new date and time.")
+
+        # 4. Perform swaps
+        old_slot.status = SlotStatus.AVAILABLE.value
+        
+        new_slot.status = SlotStatus.BOOKED.value
+        new_slot.held_by_id = None
+        new_slot.held_until = None
+        
+        appointment.slot_id = new_slot.id
+        appointment.doctor_id = new_slot.doctor_id
+
+        await self.db.commit()
+
+        # Reload relationships
+        await self.db.refresh(appointment)
+        
+        # TODO: Send reschedule email and update calendar event
+
+        return AppointmentRescheduleResponse(
+            id=appointment.id,
+            status=appointment.status,
+            slot=new_slot,
+            previous_slot=old_slot
+        )

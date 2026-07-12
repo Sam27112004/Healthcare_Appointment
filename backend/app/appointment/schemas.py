@@ -39,6 +39,26 @@ class AppointmentResponse(BaseModel):
     symptom_severity: str | None = None
     ai_pre_visit_status: str | None = None
     created_at: datetime
+    cancellation_reason: str | None = None
+    cancelled_by: str | None = None
 
     class Config:
         from_attributes = True
+
+class AppointmentCancelRequest(BaseModel):
+    reason: str | None = Field(None, max_length=500)
+
+class AppointmentCancelResponse(BaseModel):
+    id: uuid.UUID
+    status: str
+    cancellation_reason: str | None = None
+    cancelled_by: str | None = None
+
+class AppointmentRescheduleRequest(BaseModel):
+    new_slot_id: uuid.UUID
+
+class AppointmentRescheduleResponse(BaseModel):
+    id: uuid.UUID
+    status: str
+    slot: AppointmentSlotDetails
+    previous_slot: AppointmentSlotDetails
