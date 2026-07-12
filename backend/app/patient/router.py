@@ -1,0 +1,27 @@
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.patient.schemas import PatientProfile, PatientUpdate
+from app.patient.service import PatientService
+from app.auth.dependencies import get_db, get_current_user, require_role
+from app.models.user import User
+
+router = APIRouter(prefix="/patients", tags=["Patient Profile"])
+
+@router.get("/me", response_model=PatientProfile, status_code=status.HTTP_200_OK)
+async def get_my_profile(
+    current_user: User = Depends(require_role(["patient"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the current patient's profile."""
+    service = PatientService(db)
+    return await service.get_patient_profile(current_user.id)
+
+@router.put("/me", response_model=PatientProfile, status_code=status.HTTP_200_OK)
+async def update_my_profile(
+    update_data: PatientUpdate,
+    current_user: User = Depends(require_role(["patient"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update the current patient's profile."""
+    service = PatientService(db)
+    return await service.update_patient_profile(current_user.id, update_data)
