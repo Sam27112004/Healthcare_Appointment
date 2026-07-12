@@ -27,9 +27,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # AI
-    GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    # Celery & Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # AI Integration
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite"
     AI_TIMEOUT_SECONDS: int = 30
     AI_MAX_RETRIES: int = 3
 
