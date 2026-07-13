@@ -20,4 +20,8 @@ celery_app.conf.update(
 )
 
 # Autodiscover tasks
-celery_app.autodiscover_tasks(["app.ai"])
+celery_app.autodiscover_tasks([
+    "app.ai",
+    "app.appointment",
+    "app.notifications"
+])

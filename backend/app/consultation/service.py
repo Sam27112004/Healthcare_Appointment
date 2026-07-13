@@ -17,6 +17,7 @@ from app.consultation.schemas import (
 )
 from app.schemas.enums import AppointmentStatus, Role
 from app.ai.tasks import generate_post_visit_summary_task
+from app.notifications.tasks import send_consultation_complete_task
 
 class ConsultationService:
     def __init__(self, db: AsyncSession):
@@ -216,7 +217,8 @@ class ConsultationService:
 
         # Dispatch Celery tasks
         generate_post_visit_summary_task.delay(str(appointment.id))
-        # TODO in Phase 8: Schedule medication reminders and send completion email
+        send_consultation_complete_task.delay(str(appointment.id))
+        # TODO in Phase 8: Schedule medication reminders
 
         return ConsultationCompleteResponse(
             id=appointment.id,

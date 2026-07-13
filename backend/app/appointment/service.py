@@ -10,6 +10,11 @@ from app.models.user import User
 from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse, AppointmentCancelResponse, AppointmentRescheduleResponse
 from app.schemas.enums import SlotStatus, AppointmentStatus, Role
 from app.ai.tasks import generate_pre_visit_summary_task
+from app.notifications.tasks import (
+    send_booking_confirmation_task,
+    send_cancellation_email_task,
+    send_reschedule_email_task
+)
 
 class AppointmentService:
     def __init__(self, db: AsyncSession):
@@ -130,7 +135,7 @@ class AppointmentService:
 
         # Dispatch Celery tasks
         generate_pre_visit_summary_task.delay(str(created_appt.id))
-        # send_booking_confirmation.delay(created_appt.id)
+        send_booking_confirmation_task.delay(str(created_appt.id))
 
         return created_appt
 
@@ -166,7 +171,7 @@ class AppointmentService:
         
         await self.db.commit()
 
-        # TODO: send cancellation email
+        send_cancellation_email_task.delay(str(appointment.id))
 
         return AppointmentCancelResponse(
             id=appointment.id,
@@ -243,7 +248,9 @@ class AppointmentService:
         # Reload relationships
         await self.db.refresh(appointment)
         
-        # TODO: Send reschedule email and update calendar event
+        old_date = old_slot.slot_date.strftime("%Y-%m-%d")
+        old_time = old_slot.start_time.strftime("%H:%M")
+        send_reschedule_email_task.delay(str(appointment.id), old_date, old_time)
 
         return AppointmentRescheduleResponse(
             id=appointment.id,

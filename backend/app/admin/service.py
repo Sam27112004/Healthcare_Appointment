@@ -17,6 +17,7 @@ from app.auth.security import get_password_hash
 from app.schemas.enums import Role, SlotStatus
 from app.schemas.common import PaginatedResponse
 from app.doctor.schemas import DoctorProfile
+from app.notifications.tasks import send_leave_notification_task
 
 class AdminService:
     def __init__(self, db: AsyncSession):
