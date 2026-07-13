@@ -13,6 +13,8 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(20))
     role: Mapped[str] = mapped_column(String(20), nullable=False, index=True) # CHECK constraint handled in DB/Alembic or by app layer enum
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    google_access_token: Mapped[str | None] = mapped_column(String(2048))
+    google_refresh_token: Mapped[str | None] = mapped_column(String(2048))
 
     patient_profile: Mapped["Patient"] = relationship("Patient", back_populates="user", uselist=False, cascade="all, delete-orphan")
     doctor_profile: Mapped["Doctor"] = relationship("Doctor", back_populates="user", uselist=False, cascade="all, delete-orphan")

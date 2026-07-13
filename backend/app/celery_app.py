@@ -20,7 +20,8 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_routes={
         "app.ai.tasks.*": {"queue": "ai"},
-        "app.notifications.tasks.*": {"queue": "email"}
+        "app.notifications.tasks.*": {"queue": "email"},
+        "app.calendar.tasks.*": {"queue": "calendar"}
     },
     
     # Beat schedule
@@ -48,5 +49,6 @@ celery_app.conf.update(
 celery_app.autodiscover_tasks([
     "app.ai",
     "app.appointment",
-    "app.notifications"
+    "app.notifications",
+    "app.calendar"
 ])
