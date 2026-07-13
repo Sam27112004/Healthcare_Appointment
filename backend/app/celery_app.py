@@ -19,5 +19,5 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
 )
 
-# Optional: Autodiscover tasks here later when we add them
-# celery_app.autodiscover_tasks(["app.ai", "app.notifications", "app.appointment"])
+# Autodiscover tasks
+celery_app.autodiscover_tasks(["app.ai"])
