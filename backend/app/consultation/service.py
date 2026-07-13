@@ -12,9 +12,11 @@ from app.models.user import User
 from app.consultation.schemas import (
     DoctorDashboardResponse, PreVisitSummaryResponse,
     ConsultationCreate, ConsultationResponse,
-    PrescriptionCreate, PrescriptionResponse
+    PrescriptionCreate, PrescriptionResponse,
+    ConsultationCompleteResponse
 )
 from app.schemas.enums import AppointmentStatus, Role
+from app.ai.tasks import generate_post_visit_summary_task
 
 class ConsultationService:
     def __init__(self, db: AsyncSession):
@@ -195,3 +197,29 @@ class ConsultationService:
         prescription = (await self.db.execute(reload_stmt)).scalar_one()
 
         return prescription
+
+    async def complete_consultation(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID) -> ConsultationCompleteResponse:
+        appointment = await self._get_valid_appointment(doctor_id, appointment_id)
+
+        # Ensure consultation exists first
+        stmt = select(Consultation).where(Consultation.appointment_id == appointment_id)
+        consultation = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not consultation:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You must log consultation notes before completing the appointment")
+
+        # Mark as completed
+        appointment.status = AppointmentStatus.COMPLETED.value
+        appointment.ai_post_visit_status = "processing"
+        
+        await self.db.commit()
+
+        # Dispatch Celery tasks
+        generate_post_visit_summary_task.delay(str(appointment.id))
+        # TODO in Phase 8: Schedule medication reminders and send completion email
+
+        return ConsultationCompleteResponse(
+            id=appointment.id,
+            status=appointment.status,
+            ai_post_visit_status=appointment.ai_post_visit_status
+        )

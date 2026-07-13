@@ -70,3 +70,11 @@ class PrescriptionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ConsultationCompleteResponse(BaseModel):
+    id: uuid.UUID
+    status: str
+    ai_post_visit_status: str
+
+    class Config:
+        from_attributes = True

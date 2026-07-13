@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.consultation.schemas import (
     DoctorDashboardResponse, PreVisitSummaryResponse,
     ConsultationCreate, ConsultationResponse,
-    PrescriptionCreate, PrescriptionResponse
+    PrescriptionCreate, PrescriptionResponse,
+    ConsultationCompleteResponse
 )
 from app.consultation.service import ConsultationService
 from app.auth.dependencies import get_db, require_role
@@ -65,3 +66,13 @@ async def log_prescription(
     """Create or overwrite a prescription with medications."""
     service = ConsultationService(db)
     return await service.add_prescription(current_user.id, appointment_id, data)
+
+@router.post("/appointments/{appointment_id}/complete", response_model=ConsultationCompleteResponse, status_code=status.HTTP_200_OK)
+async def complete_consultation(
+    appointment_id: uuid.UUID,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Mark the consultation as complete and trigger AI summaries."""
+    service = ConsultationService(db)
+    return await service.complete_consultation(current_user.id, appointment_id)
