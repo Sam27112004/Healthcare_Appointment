@@ -4,22 +4,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { ROUTES } from '../../../config/routes';
 
-export function DoctorDashboard() {
+export function AppointmentList() {
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchTodayAppointments();
-  }, []);
+    fetchAppointments();
+  }, [statusFilter]);
 
-  const fetchTodayAppointments = async () => {
+  const fetchAppointments = async () => {
+    setIsLoading(true);
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const data = await doctorApi.getAppointments({ date: today });
+      const data = await doctorApi.getAppointments({ 
+        status: statusFilter === 'all' ? undefined : statusFilter 
+      });
       setAppointments(data.items || data);
     } catch (e) {
       console.error(e);
@@ -39,38 +43,43 @@ export function DoctorDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Doctor Dashboard</h1>
-        <p className="text-slate-500">Overview of your schedule for today.</p>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{appointments.length}</div>
-          </CardContent>
-        </Card>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Schedule</h1>
+          <p className="text-slate-500">Manage all your appointments.</p>
+        </div>
+        <div className="w-48">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Appointments</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Today's Schedule</CardTitle>
-          <CardDescription>{format(new Date(), 'MMMM d, yyyy')}</CardDescription>
+          <CardTitle>Appointments</CardTitle>
+          <CardDescription>A list of your consultations.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-slate-500">Loading schedule...</div>
           ) : appointments.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg">
-              You have no appointments scheduled for today.
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              No appointments found for this filter.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Patient</TableHead>
                   <TableHead>Status</TableHead>
@@ -80,6 +89,7 @@ export function DoctorDashboard() {
               <TableBody>
                 {appointments.map((appt) => (
                   <TableRow key={appt.id}>
+                    <TableCell>{appt.slot?.slot_date}</TableCell>
                     <TableCell className="font-medium">
                       {appt.slot?.start_time.substring(0,5)}
                     </TableCell>

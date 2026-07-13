@@ -15,7 +15,14 @@ export const ROUTES = {
 
   // Doctor
   DOCTOR_DASHBOARD: '/doctor/dashboard',
+  DOCTOR_APPOINTMENTS: '/doctor/appointments',
+  DOCTOR_APPOINTMENT_DETAILS: '/doctor/appointments/:appointmentId',
+  DOCTOR_CONSULTATION: '/doctor/appointments/:appointmentId/consultation',
 
   // Admin
   ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_DOCTORS: '/admin/doctors',
+  ADMIN_DOCTOR_SCHEDULE: '/admin/doctors/:doctorId/schedule',
+  ADMIN_DOCTOR_LEAVES: '/admin/doctors/:doctorId/leaves',
+  ADMIN_SETTINGS: '/admin/settings',
 } as const;

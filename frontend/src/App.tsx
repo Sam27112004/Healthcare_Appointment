@@ -15,6 +15,14 @@ import { AppointmentDetails } from './features/patient/pages/AppointmentDetails'
 import { DoctorDashboard } from './features/doctor/pages/DoctorDashboard'
 import { AdminDashboard } from './features/admin/pages/AdminDashboard'
 
+import { AppointmentList } from './features/doctor/pages/AppointmentList'
+import { AppointmentView } from './features/doctor/pages/AppointmentView'
+import { ConsultationForm } from './features/doctor/pages/ConsultationForm'
+
+import { DoctorManagement } from './features/admin/pages/DoctorManagement'
+import { ScheduleConfig } from './features/admin/pages/ScheduleConfig'
+import { LeaveManagement } from './features/admin/pages/LeaveManagement'
+
 function App() {
   return (
     <BrowserRouter>
@@ -39,6 +47,9 @@ function App() {
         <Route element={<ProtectedRoute roles={['doctor']} />}>
           <Route element={<AppLayout role="doctor" />}>
             <Route path={ROUTES.DOCTOR_DASHBOARD} element={<DoctorDashboard />} />
+            <Route path={ROUTES.DOCTOR_APPOINTMENTS} element={<AppointmentList />} />
+            <Route path={ROUTES.DOCTOR_APPOINTMENT_DETAILS} element={<AppointmentView />} />
+            <Route path={ROUTES.DOCTOR_CONSULTATION} element={<ConsultationForm />} />
           </Route>
         </Route>
 
@@ -46,6 +57,9 @@ function App() {
         <Route element={<ProtectedRoute roles={['admin']} />}>
           <Route element={<AppLayout role="admin" />}>
             <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+            <Route path={ROUTES.ADMIN_DOCTORS} element={<DoctorManagement />} />
+            <Route path={ROUTES.ADMIN_DOCTOR_SCHEDULE} element={<ScheduleConfig />} />
+            <Route path={ROUTES.ADMIN_DOCTOR_LEAVES} element={<LeaveManagement />} />
           </Route>
         </Route>
 
