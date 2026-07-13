@@ -9,6 +9,7 @@ from app.models.appointment import Appointment
 from app.models.user import User
 from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse, AppointmentCancelResponse, AppointmentRescheduleResponse
 from app.schemas.enums import SlotStatus, AppointmentStatus, Role
+from app.ai.tasks import generate_pre_visit_summary_task
 
 class AppointmentService:
     def __init__(self, db: AsyncSession):
@@ -127,8 +128,8 @@ class AppointmentService:
         )
         created_appt = (await self.db.execute(stmt)).scalar_one()
 
-        # TODO: Dispatch Celery tasks here
-        # generate_pre_visit_summary.delay(created_appt.id)
+        # Dispatch Celery tasks
+        generate_pre_visit_summary_task.delay(str(created_appt.id))
         # send_booking_confirmation.delay(created_appt.id)
 
         return created_appt
