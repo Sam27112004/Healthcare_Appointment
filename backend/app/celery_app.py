@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from app.config import settings
 
 celery_app = Celery(
@@ -17,6 +18,30 @@ celery_app.conf.update(
     # Configure retry defaults
     task_acks_late=True,
     worker_prefetch_multiplier=1,
+    task_routes={
+        "app.ai.tasks.*": {"queue": "ai"},
+        "app.notifications.tasks.*": {"queue": "email"}
+    },
+    
+    # Beat schedule
+    beat_schedule={
+        "cleanup-expired-holds": {
+            "task": "app.appointment.tasks.cleanup_expired_holds",
+            "schedule": 60.0,
+        },
+        "send-appointment-reminders": {
+            "task": "app.notifications.tasks.send_appointment_reminders_task",
+            "schedule": crontab(hour=8, minute=0),
+        },
+        "send-medication-reminders": {
+            "task": "app.notifications.tasks.send_medication_reminders_task",
+            "schedule": crontab(minute="*/30"),
+        },
+        "retry-failed-notifications": {
+            "task": "app.notifications.tasks.retry_failed_notifications_task",
+            "schedule": 300.0,
+        },
+    }
 )
 
 # Autodiscover tasks
