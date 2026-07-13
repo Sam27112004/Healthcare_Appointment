@@ -22,10 +22,12 @@ import { ConsultationForm } from './features/doctor/pages/ConsultationForm'
 import { DoctorManagement } from './features/admin/pages/DoctorManagement'
 import { ScheduleConfig } from './features/admin/pages/ScheduleConfig'
 import { LeaveManagement } from './features/admin/pages/LeaveManagement'
+import { Toaster } from './components/ui/toaster'
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster />
       <Routes>
         {/* Public Routes */}
         <Route path={ROUTES.LOGIN} element={<LoginPage />} />

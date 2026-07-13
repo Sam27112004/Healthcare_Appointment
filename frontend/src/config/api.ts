@@ -16,12 +16,31 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor - handle 401
+import { toast } from '../hooks/use-toast';
+
+// Response interceptor - handle 401 & Global Error Toast
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // In a real app we might try to refresh token here
-    // For this implementation, we will just logout on 401
+    // Show toast for error
+    const detail = error.response?.data?.detail;
+    
+    // Check if it's an array of pydantic errors or just a string
+    let message = 'An unexpected error occurred';
+    if (typeof detail === 'string') {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message = detail[0]?.msg || 'Validation Error';
+    }
+
+    if (error.response?.status && error.response.status >= 400 && error.response.status !== 401) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: message,
+      });
+    }
+
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
       if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {

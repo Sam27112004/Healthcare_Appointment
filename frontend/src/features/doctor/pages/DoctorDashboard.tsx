@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { formatTime, formatStatus } from '../../../lib/formatters';
 
 export function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -30,10 +31,10 @@ export function DoctorDashboard() {
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'scheduled': return <Badge variant="default" className="bg-blue-500">Scheduled</Badge>;
-      case 'completed': return <Badge variant="default" className="bg-green-500">Completed</Badge>;
-      case 'cancelled': return <Badge variant="destructive">Cancelled</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
+      case 'scheduled': return <Badge variant="default" className="bg-blue-500">{formatStatus(status)}</Badge>;
+      case 'completed': return <Badge variant="default" className="bg-green-500">{formatStatus(status)}</Badge>;
+      case 'cancelled': return <Badge variant="destructive">{formatStatus(status)}</Badge>;
+      default: return <Badge variant="outline">{formatStatus(status)}</Badge>;
     }
   };
 
@@ -81,7 +82,7 @@ export function DoctorDashboard() {
                 {appointments.map((appt) => (
                   <TableRow key={appt.id}>
                     <TableCell className="font-medium">
-                      {appt.slot?.start_time.substring(0,5)}
+                      {formatTime(appt.slot?.start_time)}
                     </TableCell>
                     <TableCell>{appt.patient?.user?.full_name}</TableCell>
                     <TableCell>{getStatusBadge(appt.status)}</TableCell>
