@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><style>body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }</style></head>
+<body>
+    <h2>Appointment Cancelled</h2>
+    <p>Hi {{ patient_name }},</p>
+    <p>Your appointment with <strong>{{ doctor_name }}</strong> on <strong>{{ date }} at {{ time }}</strong> has been cancelled.</p>
+    {% if reason %}
+    <p><strong>Reason:</strong> {{ reason }}</p>
+    {% endif %}
+    <p>If this was a mistake or you wish to book a new appointment, please visit our portal.</p>
+    <p>Thanks,<br/>Healthcare Appointment Manager</p>
+</body>
+</html>

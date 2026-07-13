@@ -9,9 +9,9 @@ class AppointmentStatus(str, Enum):
     BOOKED = "booked"
     CONFIRMED = "confirmed"
     IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
     CANCELLED = "cancelled"
-    NO_SHOW = "no_show"
+    COMPLETED = "completed"
+    NOSHOW = "no_show"
 
 class SlotStatus(str, Enum):
     AVAILABLE = "available"

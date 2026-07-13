@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><style>body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }</style></head>
+<body>
+    <h2>Appointment Reminder</h2>
+    <p>Hi {{ patient_name }},</p>
+    <p>This is a quick reminder for your upcoming appointment with <strong>{{ doctor_name }}</strong>.</p>
+    <ul>
+        <li><strong>Date:</strong> {{ date }}</li>
+        <li><strong>Time:</strong> {{ time }}</li>
+    </ul>
+    <p>Please remember to bring any relevant medical documents.</p>
+    <p>Thanks,<br/>Healthcare Appointment Manager</p>
+</body>
+</html>

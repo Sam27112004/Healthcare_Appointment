@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><style>body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }</style></head>
+<body>
+    <h2>Medication Reminder</h2>
+    <p>Hi {{ patient_name }},</p>
+    <p>It's time to take your medication:</p>
+    <div style="padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9;">
+        <h3 style="margin-top: 0;">{{ medication_name }}</h3>
+        <p><strong>Dosage:</strong> {{ dosage }}</p>
+        <p><strong>Instructions:</strong> {{ instructions }}</p>
+    </div>
+    <p>Wishing you a speedy recovery!</p>
+    <p>Thanks,<br/>Healthcare Appointment Manager</p>
+</body>
+</html>
