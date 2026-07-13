@@ -2,7 +2,11 @@ import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.consultation.schemas import DoctorDashboardResponse, PreVisitSummaryResponse
+from app.consultation.schemas import (
+    DoctorDashboardResponse, PreVisitSummaryResponse,
+    ConsultationCreate, ConsultationResponse,
+    PrescriptionCreate, PrescriptionResponse
+)
 from app.consultation.service import ConsultationService
 from app.auth.dependencies import get_db, require_role
 from app.models.user import User
@@ -39,3 +43,25 @@ async def get_pre_visit_summary(
     """Get the AI-generated pre-visit summary for an appointment."""
     service = ConsultationService(db)
     return await service.get_pre_visit_summary(current_user.id, appointment_id)
+
+@router.post("/appointments/{appointment_id}/consultation", response_model=ConsultationResponse, status_code=status.HTTP_201_CREATED)
+async def log_consultation(
+    appointment_id: uuid.UUID,
+    data: ConsultationCreate,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Log or update consultation notes and diagnosis."""
+    service = ConsultationService(db)
+    return await service.add_consultation(current_user.id, appointment_id, data)
+
+@router.post("/appointments/{appointment_id}/prescription", response_model=PrescriptionResponse, status_code=status.HTTP_201_CREATED)
+async def log_prescription(
+    appointment_id: uuid.UUID,
+    data: PrescriptionCreate,
+    current_user: User = Depends(require_role(["doctor"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create or overwrite a prescription with medications."""
+    service = ConsultationService(db)
+    return await service.add_prescription(current_user.id, appointment_id, data)

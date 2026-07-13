@@ -20,3 +20,53 @@ class PreVisitSummaryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ConsultationCreate(BaseModel):
+    diagnosis: str | None = Field(None, max_length=500)
+    notes: str = Field(..., max_length=5000)
+    follow_up_date: date | None = None
+
+class ConsultationResponse(BaseModel):
+    id: uuid.UUID
+    appointment_id: uuid.UUID
+    diagnosis: str | None = None
+    notes: str
+    follow_up_date: date | None = None
+
+    class Config:
+        from_attributes = True
+
+class MedicationCreate(BaseModel):
+    name: str = Field(..., max_length=255)
+    dosage: str = Field(..., max_length=100)
+    frequency: str = Field(..., max_length=100)
+    duration: str = Field(..., max_length=100)
+    instructions: str | None = Field(None, max_length=1000)
+    start_date: date
+    end_date: date
+
+class PrescriptionCreate(BaseModel):
+    notes: str | None = Field(None, max_length=1000)
+    medications: list[MedicationCreate] = Field(..., min_length=1)
+
+class MedicationResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    dosage: str
+    frequency: str
+    duration: str
+    instructions: str | None = None
+    start_date: date
+    end_date: date
+
+    class Config:
+        from_attributes = True
+
+class PrescriptionResponse(BaseModel):
+    id: uuid.UUID
+    consultation_id: uuid.UUID
+    notes: str | None = None
+    medications: list[MedicationResponse]
+
+    class Config:
+        from_attributes = True

@@ -7,8 +7,13 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import selectinload
 from app.models.appointment import Appointment
 from app.models.slot import AppointmentSlot
+from app.models.consultation import Consultation, Prescription, Medication
 from app.models.user import User
-from app.consultation.schemas import DoctorDashboardResponse, PreVisitSummaryResponse
+from app.consultation.schemas import (
+    DoctorDashboardResponse, PreVisitSummaryResponse,
+    ConsultationCreate, ConsultationResponse,
+    PrescriptionCreate, PrescriptionResponse
+)
 from app.schemas.enums import AppointmentStatus, Role
 
 class ConsultationService:
@@ -101,3 +106,92 @@ class ConsultationService:
             status=appointment.ai_pre_visit_status,
             summary=appointment.ai_pre_visit_summary or {}
         )
+
+    async def _get_valid_appointment(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID):
+        stmt = select(Appointment).where(
+            Appointment.id == appointment_id,
+            Appointment.doctor_id == doctor_id
+        )
+        appointment = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not appointment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found or not assigned to you")
+
+        if appointment.status in [AppointmentStatus.CANCELLED.value, AppointmentStatus.COMPLETED.value]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Cannot modify a {appointment.status} appointment")
+            
+        return appointment
+
+    async def add_consultation(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID, data: ConsultationCreate) -> Consultation:
+        appointment = await self._get_valid_appointment(doctor_id, appointment_id)
+
+        # Check for existing consultation
+        stmt = select(Consultation).where(Consultation.appointment_id == appointment_id)
+        consultation = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if consultation:
+            consultation.diagnosis = data.diagnosis
+            consultation.notes = data.notes
+            consultation.follow_up_date = data.follow_up_date
+        else:
+            consultation = Consultation(
+                appointment_id=appointment.id,
+                doctor_id=doctor_id,
+                diagnosis=data.diagnosis,
+                notes=data.notes,
+                follow_up_date=data.follow_up_date
+            )
+            self.db.add(consultation)
+
+        await self.db.commit()
+        await self.db.refresh(consultation)
+        
+        return consultation
+
+    async def add_prescription(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID, data: PrescriptionCreate) -> Prescription:
+        appointment = await self._get_valid_appointment(doctor_id, appointment_id)
+
+        # Ensure consultation exists first
+        stmt = select(Consultation).where(Consultation.appointment_id == appointment_id)
+        consultation = (await self.db.execute(stmt)).scalar_one_or_none()
+
+        if not consultation:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You must log consultation notes before writing a prescription")
+
+        # Check for existing prescription
+        p_stmt = select(Prescription).options(selectinload(Prescription.medications)).where(Prescription.consultation_id == consultation.id)
+        prescription = (await self.db.execute(p_stmt)).scalar_one_or_none()
+
+        if prescription:
+            # Overwrite completely
+            await self.db.delete(prescription)
+            await self.db.flush()
+
+        prescription = Prescription(
+            consultation_id=consultation.id,
+            notes=data.notes
+        )
+        self.db.add(prescription)
+        await self.db.flush() # flush to get prescription.id
+
+        # Add medications
+        for med in data.medications:
+            medication = Medication(
+                prescription_id=prescription.id,
+                name=med.name,
+                dosage=med.dosage,
+                frequency=med.frequency,
+                duration=med.duration,
+                instructions=med.instructions,
+                start_date=med.start_date,
+                end_date=med.end_date
+            )
+            self.db.add(medication)
+
+        await self.db.commit()
+        
+        # Reload with medications for response
+        reload_stmt = select(Prescription).options(selectinload(Prescription.medications)).where(Prescription.id == prescription.id)
+        prescription = (await self.db.execute(reload_stmt)).scalar_one()
+
+        return prescription
