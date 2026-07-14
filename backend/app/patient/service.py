@@ -84,8 +84,9 @@ class PatientService:
                 "id": appt.id,
                 "doctor": {
                     "id": appt.doctor.id,
-                    "full_name": appt.doctor.user.full_name,
-                    "specialization": appt.doctor.specialization.name if appt.doctor.specialization else "General"
+                    "user": {
+                        "full_name": appt.doctor.user.full_name
+                    }
                 },
                 "slot": {
                     "id": appt.slot.id,

@@ -88,7 +88,18 @@ export function ScheduleConfig() {
       });
       
       await Promise.all(promises);
-      alert('Schedule configured successfully!');
+      
+      // Auto-generate slots for the next 30 days
+      const today = new Date();
+      const nextMonth = new Date();
+      nextMonth.setDate(today.getDate() + 30);
+      
+      const startDate = today.toISOString().split('T')[0];
+      const endDate = nextMonth.toISOString().split('T')[0];
+      
+      await adminApi.generateSlots(doctorId!, startDate, endDate);
+      
+      alert('Schedule configured and slots generated successfully!');
       navigate('/admin/doctors');
     } catch (e) {
       console.error(e);

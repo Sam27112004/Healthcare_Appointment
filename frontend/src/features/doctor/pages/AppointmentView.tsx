@@ -97,19 +97,28 @@ export function AppointmentView() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              {!appointment.pre_visit_summary ? (
+              {!appointment.ai_pre_visit_status || appointment.ai_pre_visit_status === 'skipped' ? (
                 <p className="text-sm text-slate-500 py-4">No summary generated.</p>
-              ) : appointment.pre_visit_summary.status === 'processing' ? (
+              ) : appointment.ai_pre_visit_status === 'processing' || appointment.ai_pre_visit_status === 'pending' ? (
                 <p className="text-sm text-slate-500 py-4">Processing...</p>
-              ) : (
+              ) : appointment.ai_pre_visit_summary ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p>{appointment.pre_visit_summary.summary}</p>
+                  <p><strong>Chief Complaint:</strong> {appointment.ai_pre_visit_summary.chief_complaint}</p>
+                  <p><strong>Urgency Level:</strong> {appointment.ai_pre_visit_summary.urgency_level}</p>
+                  <p><strong>Suggested Questions:</strong></p>
+                  <ul className="list-disc pl-5">
+                    {appointment.ai_pre_visit_summary.suggested_questions?.map((q: string, i: number) => (
+                      <li key={i}>{q}</li>
+                    ))}
+                  </ul>
                 </div>
+              ) : (
+                <p className="text-sm text-slate-500 py-4">Summary analysis failed.</p>
               )}
             </CardContent>
           </Card>
           
-          {appointment.status === 'completed' && appointment.post_visit_summary && (
+          {appointment.status === 'completed' && appointment.ai_post_visit_status === 'completed' && appointment.ai_post_visit_summary && (
              <Card className="border-none shadow-sm h-fit">
              <CardHeader className="bg-emerald-50 border-b border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900">
                <CardTitle className="flex items-center text-emerald-800 dark:text-emerald-300">
@@ -119,7 +128,8 @@ export function AppointmentView() {
              </CardHeader>
              <CardContent className="pt-6">
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <p>{appointment.post_visit_summary.summary}</p>
+                  <p><strong>Summary:</strong> {appointment.ai_post_visit_summary.patient_summary}</p>
+                  <p><strong>Follow-up Instructions:</strong> {appointment.ai_post_visit_summary.follow_up_instructions}</p>
                 </div>
              </CardContent>
            </Card>

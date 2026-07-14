@@ -1,6 +1,27 @@
+from typing import Any
 import uuid
 from pydantic import BaseModel, Field
 from datetime import datetime, date, time
+
+class UserBasic(BaseModel):
+    full_name: str
+    
+    class Config:
+        from_attributes = True
+
+class DoctorBasic(BaseModel):
+    id: uuid.UUID
+    user: UserBasic
+
+    class Config:
+        from_attributes = True
+
+class PatientBasic(BaseModel):
+    id: uuid.UUID
+    user: UserBasic
+
+    class Config:
+        from_attributes = True
 
 class SlotHoldRequest(BaseModel):
     slot_id: uuid.UUID
@@ -33,11 +54,16 @@ class AppointmentResponse(BaseModel):
     id: uuid.UUID
     patient_id: uuid.UUID
     doctor_id: uuid.UUID
+    doctor: DoctorBasic | None = None
+    patient: PatientBasic | None = None
     slot: AppointmentSlotDetails
     status: str
     symptoms: str
     symptom_severity: str | None = None
     ai_pre_visit_status: str | None = None
+    ai_pre_visit_summary: dict | None = None
+    ai_post_visit_status: str | None = None
+    ai_post_visit_summary: dict | None = None
     created_at: datetime
     cancellation_reason: str | None = None
     cancelled_by: str | None = None

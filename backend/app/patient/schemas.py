@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, time, datetime
 from pydantic import BaseModel, Field
+from app.appointment.schemas import DoctorBasic
 
 class UserSummary(BaseModel):
     id: uuid.UUID
@@ -51,7 +52,7 @@ class SlotSummary(BaseModel):
 
 class PatientAppointmentResponse(BaseModel):
     id: uuid.UUID
-    doctor: DoctorSummary
+    doctor: DoctorBasic
     slot: SlotSummary
     status: str
     symptoms: str

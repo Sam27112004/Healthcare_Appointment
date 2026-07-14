@@ -46,6 +46,14 @@ export const adminApi = {
     return response.data;
   },
   
+  generateSlots: async (doctorId: string, startDate: string, endDate: string) => {
+    const response = await api.post(`/admin/doctors/${doctorId}/slots/generate`, {
+      start_date: startDate,
+      end_date: endDate
+    });
+    return response.data;
+  },
+  
   createLeave: async (doctorId: string, date: string, reason: string) => {
     const response = await api.post(`/admin/doctors/${doctorId}/leave`, {
       leave_date: date,

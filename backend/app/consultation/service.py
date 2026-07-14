@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.models.appointment import Appointment
 from app.models.slot import AppointmentSlot
 from app.models.consultation import Consultation, Prescription, Medication
-from app.models.user import User
+from app.models.user import User, Patient
 from app.consultation.schemas import (
     DoctorDashboardResponse, PreVisitSummaryResponse,
     ConsultationCreate, ConsultationResponse,
@@ -66,7 +66,10 @@ class ConsultationService:
     async def get_doctor_appointments(self, doctor_id: uuid.UUID, status_filter: str | None, page: int, limit: int):
         offset = (page - 1) * limit
         
-        stmt = select(Appointment).options(selectinload(Appointment.slot)).join(AppointmentSlot).where(Appointment.doctor_id == doctor_id)
+        stmt = select(Appointment).options(
+            selectinload(Appointment.slot),
+            selectinload(Appointment.patient).selectinload(Patient.user)
+        ).join(AppointmentSlot).where(Appointment.doctor_id == doctor_id)
         
         if status_filter and status_filter.lower() != "all":
             stmt = stmt.where(Appointment.status == status_filter.lower())
