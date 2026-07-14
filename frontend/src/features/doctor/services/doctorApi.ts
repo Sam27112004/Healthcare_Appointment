@@ -1,6 +1,11 @@
 import api from '../../../config/api';
 
 export const doctorApi = {
+  getDashboard: async () => {
+    const response = await api.get('/doctor/dashboard');
+    return response.data;
+  },
+
   getAppointments: async (params?: { date?: string; status?: string }) => {
     const response = await api.get('/doctor/appointments', { params });
     return response.data; // { items: Appointment[], total: number }

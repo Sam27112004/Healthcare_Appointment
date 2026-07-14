@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.models.appointment import Appointment
 from app.models.slot import AppointmentSlot
 from app.models.consultation import Consultation, Prescription, Medication
-from app.models.user import User, Patient
+from app.models.user import User, Patient, Doctor
 from app.consultation.schemas import (
     DoctorDashboardResponse, PreVisitSummaryResponse,
     ConsultationCreate, ConsultationResponse,
@@ -23,7 +23,15 @@ class ConsultationService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_doctor_dashboard(self, doctor_id: uuid.UUID) -> DoctorDashboardResponse:
+    async def _get_doctor_id(self, user_id: uuid.UUID) -> uuid.UUID:
+        stmt = select(Doctor.id).where(Doctor.user_id == user_id)
+        doctor_id = (await self.db.execute(stmt)).scalar_one_or_none()
+        if not doctor_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doctor profile not found")
+        return doctor_id
+
+    async def get_doctor_dashboard(self, user_id: uuid.UUID) -> DoctorDashboardResponse:
+        doctor_id = await self._get_doctor_id(user_id)
         today = datetime.now(timezone.utc).date()
 
         # 1. Fetch today's appointments
@@ -63,7 +71,8 @@ class ConsultationService:
             pending_today=pending_today
         )
 
-    async def get_doctor_appointments(self, doctor_id: uuid.UUID, status_filter: str | None, page: int, limit: int):
+    async def get_doctor_appointments(self, user_id: uuid.UUID, status_filter: str | None, page: int, limit: int):
+        doctor_id = await self._get_doctor_id(user_id)
         offset = (page - 1) * limit
         
         stmt = select(Appointment).options(
@@ -94,15 +103,9 @@ class ConsultationService:
             "pages": pages
         }
 
-    async def get_pre_visit_summary(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID) -> PreVisitSummaryResponse:
-        stmt = select(Appointment).where(
-            Appointment.id == appointment_id,
-            Appointment.doctor_id == doctor_id
-        )
-        appointment = (await self.db.execute(stmt)).scalar_one_or_none()
-
-        if not appointment:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found or not assigned to you")
+    async def get_pre_visit_summary(self, user_id: uuid.UUID, appointment_id: uuid.UUID) -> PreVisitSummaryResponse:
+        doctor_id = await self._get_doctor_id(user_id)
+        appointment = await self._get_valid_appointment(doctor_id, appointment_id)
 
         if appointment.ai_pre_visit_status != "completed":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Pre-visit summary is not ready yet. Status: {appointment.ai_pre_visit_status}")
@@ -128,7 +131,8 @@ class ConsultationService:
             
         return appointment
 
-    async def add_consultation(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID, data: ConsultationCreate) -> Consultation:
+    async def add_consultation(self, user_id: uuid.UUID, appointment_id: uuid.UUID, data: ConsultationCreate) -> Consultation:
+        doctor_id = await self._get_doctor_id(user_id)
         appointment = await self._get_valid_appointment(doctor_id, appointment_id)
 
         # Check for existing consultation
@@ -154,7 +158,8 @@ class ConsultationService:
         
         return consultation
 
-    async def add_prescription(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID, data: PrescriptionCreate) -> Prescription:
+    async def add_prescription(self, user_id: uuid.UUID, appointment_id: uuid.UUID, data: PrescriptionCreate) -> Prescription:
+        doctor_id = await self._get_doctor_id(user_id)
         appointment = await self._get_valid_appointment(doctor_id, appointment_id)
 
         # Ensure consultation exists first
@@ -202,7 +207,8 @@ class ConsultationService:
 
         return prescription
 
-    async def complete_consultation(self, doctor_id: uuid.UUID, appointment_id: uuid.UUID) -> ConsultationCompleteResponse:
+    async def complete_consultation(self, user_id: uuid.UUID, appointment_id: uuid.UUID) -> ConsultationCompleteResponse:
+        doctor_id = await self._get_doctor_id(user_id)
         appointment = await self._get_valid_appointment(doctor_id, appointment_id)
 
         # Ensure consultation exists first

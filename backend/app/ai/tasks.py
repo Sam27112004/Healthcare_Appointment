@@ -3,7 +3,7 @@ import uuid
 from celery.utils.log import get_task_logger
 from sqlalchemy.future import select
 from app.celery_app import celery_app
-from app.database import async_session_factory
+from app.database import celery_session_factory
 from app.models.appointment import Appointment
 from app.models.consultation import Consultation
 from app.ai.service import AIService
@@ -12,7 +12,7 @@ from app.config import settings
 logger = get_task_logger(__name__)
 
 async def _generate_pre_visit_summary(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         # Fetch appointment
         stmt = select(Appointment).where(Appointment.id == uuid.UUID(appointment_id))
         appointment = (await db.execute(stmt)).scalar_one_or_none()
@@ -39,7 +39,7 @@ async def _generate_pre_visit_summary(appointment_id: str):
         await db.commit()
 
 async def _apply_pre_visit_fallback(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = select(Appointment).where(Appointment.id == uuid.UUID(appointment_id))
         appointment = (await db.execute(stmt)).scalar_one_or_none()
         if appointment:
@@ -65,7 +65,7 @@ def generate_pre_visit_summary_task(self, appointment_id: str):
             asyncio.run(_apply_pre_visit_fallback(appointment_id))
 
 async def _generate_post_visit_summary(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         # Fetch consultation via appointment
         stmt = select(Appointment).where(Appointment.id == uuid.UUID(appointment_id))
         appointment = (await db.execute(stmt)).scalar_one_or_none()
@@ -96,7 +96,7 @@ async def _generate_post_visit_summary(appointment_id: str):
         await db.commit()
 
 async def _apply_post_visit_fallback(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = select(Appointment).where(Appointment.id == uuid.UUID(appointment_id))
         appointment = (await db.execute(stmt)).scalar_one_or_none()
         if appointment:

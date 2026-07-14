@@ -8,7 +8,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 from app.celery_app import celery_app
-from app.database import async_session_factory
+from app.database import celery_session_factory
 from app.models.appointment import Appointment
 from app.models.slot import AppointmentSlot
 from app.models.user import User
@@ -32,7 +32,7 @@ def _get_google_service(user: User):
     return build('calendar', 'v3', credentials=creds)
 
 async def _create_calendar_event(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(
@@ -98,7 +98,7 @@ def create_calendar_event_task(self, appointment_id: str):
         self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 async def _update_calendar_event(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(
@@ -152,7 +152,7 @@ def update_calendar_event_task(self, appointment_id: str):
         self.retry(exc=exc, countdown=2 ** self.request.retries)
 
 async def _delete_calendar_event(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(

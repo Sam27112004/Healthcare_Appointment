@@ -5,7 +5,7 @@ from celery.utils.log import get_task_logger
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from app.celery_app import celery_app
-from app.database import async_session_factory
+from app.database import celery_session_factory
 from app.models.appointment import Appointment
 from app.models.slot import AppointmentSlot
 from app.models.user import User
@@ -19,7 +19,7 @@ from app.config import settings
 logger = get_task_logger(__name__)
 
 async def _send_booking_confirmation(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(selectinload(Appointment.patient).selectinload(Patient.user), selectinload(Appointment.doctor).selectinload(Doctor.user), selectinload(Appointment.slot))
@@ -73,7 +73,7 @@ def send_booking_confirmation_task(self, appointment_id: str):
 
 
 async def _send_cancellation_email(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(selectinload(Appointment.patient).selectinload(Patient.user), selectinload(Appointment.doctor).selectinload(Doctor.user), selectinload(Appointment.slot))
@@ -112,7 +112,7 @@ def send_cancellation_email_task(self, appointment_id: str):
 
 
 async def _send_reschedule_email(appointment_id: str, old_date: str, old_time: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(selectinload(Appointment.patient).selectinload(Patient.user), selectinload(Appointment.doctor).selectinload(Doctor.user), selectinload(Appointment.slot))
@@ -152,7 +152,7 @@ def send_reschedule_email_task(self, appointment_id: str, old_date: str, old_tim
 
 
 async def _send_leave_notification(leave_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         # Fetch the leave record
         stmt = select(DoctorLeave).options(selectinload(DoctorLeave.doctor).selectinload(Doctor.user)).where(DoctorLeave.id == uuid.UUID(leave_id))
         leave = (await db.execute(stmt)).scalar_one_or_none()
@@ -211,7 +211,7 @@ def send_leave_notification_task(self, leave_id: str):
 
 
 async def _send_consultation_complete(appointment_id: str):
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(selectinload(Appointment.patient).selectinload(Patient.user), selectinload(Appointment.doctor).selectinload(Doctor.user))
@@ -249,7 +249,7 @@ async def _send_appointment_reminders():
     # Remind for appointments happening tomorrow
     tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).date()
     
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Appointment)
             .options(selectinload(Appointment.patient).selectinload(Patient.user), selectinload(Appointment.doctor).selectinload(Doctor.user), selectinload(Appointment.slot))
@@ -287,7 +287,7 @@ def send_appointment_reminders_task():
 async def _send_medication_reminders():
     today = datetime.now(timezone.utc).date()
     
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         stmt = (
             select(Medication)
             .options(
@@ -333,7 +333,7 @@ async def _retry_failed_notifications():
     # Only retry notifications failed in the last 24 hours
     yesterday = datetime.now(timezone.utc) - timedelta(days=1)
     
-    async with async_session_factory() as db:
+    async with celery_session_factory() as db:
         from app.models.notification import Notification
         from app.schemas.enums import NotificationStatus
         

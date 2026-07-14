@@ -10,6 +10,7 @@ import { formatTime, formatStatus } from '../../../lib/formatters';
 
 export function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [stats, setStats] = useState<{completed_today: number, pending_today: number} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -19,9 +20,12 @@ export function DoctorDashboard() {
 
   const fetchTodayAppointments = async () => {
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const data = await doctorApi.getAppointments({ date: today });
-      setAppointments(data.items || data);
+      const data = await doctorApi.getDashboard();
+      setAppointments(data.today_appointments || []);
+      setStats({
+        completed_today: data.completed_today,
+        pending_today: data.pending_today
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -48,10 +52,26 @@ export function DoctorDashboard() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="glass-card bg-gradient-to-br from-primary/5 to-indigo-500/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Today's Appointments</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Total Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-extrabold text-primary">{appointments.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-amber-500">{stats?.pending_today || 0}</div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Completed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-emerald-500">{stats?.completed_today || 0}</div>
           </CardContent>
         </Card>
       </div>
