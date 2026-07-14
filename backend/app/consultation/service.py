@@ -37,7 +37,12 @@ class ConsultationService:
         # 1. Fetch today's appointments
         today_stmt = (
             select(Appointment)
-            .options(selectinload(Appointment.slot))
+            .options(
+                selectinload(Appointment.slot),
+                selectinload(Appointment.patient).selectinload(Patient.user),
+                selectinload(Appointment.doctor).selectinload(Doctor.user),
+                selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+            )
             .join(AppointmentSlot)
             .where(
                 Appointment.doctor_id == doctor_id,
@@ -78,7 +83,8 @@ class ConsultationService:
         stmt = select(Appointment).options(
             selectinload(Appointment.slot),
             selectinload(Appointment.patient).selectinload(Patient.user),
-            selectinload(Appointment.doctor).selectinload(Doctor.user)
+            selectinload(Appointment.doctor).selectinload(Doctor.user),
+            selectinload(Appointment.doctor).selectinload(Doctor.specialization)
         ).join(AppointmentSlot).where(Appointment.doctor_id == doctor_id)
         
         if status_filter and status_filter.lower() != "all":

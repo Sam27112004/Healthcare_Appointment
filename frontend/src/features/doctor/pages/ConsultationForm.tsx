@@ -39,7 +39,7 @@ export function ConsultationForm() {
   } = useForm({
     defaultValues: {
       prescriptionNotes: '',
-      medications: [{ name: '', dosage: '', frequency: '', duration: '' }]
+      medications: [{ name: '', dosage: '', frequency: '', duration: '', start_date: '', end_date: '' }]
     }
   });
 
@@ -141,7 +141,7 @@ export function ConsultationForm() {
                       type="button" 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => append({ name: '', dosage: '', frequency: '', duration: '' })}
+                      onClick={() => append({ name: '', dosage: '', frequency: '', duration: '', start_date: '', end_date: '' })}
                     >
                       <Plus className="h-4 w-4 mr-2" /> Add Medication
                     </Button>
@@ -165,6 +165,14 @@ export function ConsultationForm() {
                         <div className="space-y-2">
                           <Label>Duration</Label>
                           <Input {...registerPrescription(`medications.${index}.duration` as const)} placeholder="e.g. 5 days" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Start Date <span className="text-red-500">*</span></Label>
+                          <Input type="date" {...registerPrescription(`medications.${index}.start_date` as const, { required: true })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>End Date <span className="text-red-500">*</span></Label>
+                          <Input type="date" {...registerPrescription(`medications.${index}.end_date` as const, { required: true })} />
                         </div>
                       </div>
                       <Button 

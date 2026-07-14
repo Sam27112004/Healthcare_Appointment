@@ -47,7 +47,7 @@ export const adminApi = {
   },
   
   generateSlots: async (doctorId: string, startDate: string, endDate: string) => {
-    const response = await api.post(`/admin/doctors/${doctorId}/slots/generate`, {
+    const response = await api.post(`/admin/doctors/${doctorId}/generate-slots`, {
       start_date: startDate,
       end_date: endDate
     });

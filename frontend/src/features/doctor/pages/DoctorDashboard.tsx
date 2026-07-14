@@ -10,7 +10,7 @@ import { formatTime, formatStatus } from '../../../lib/formatters';
 
 export function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
-  const [stats, setStats] = useState<{completed_today: number, pending_today: number} | null>(null);
+  const [stats, setStats] = useState<{completed_today: number, pending_today: number, upcoming_count: number} | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -24,7 +24,8 @@ export function DoctorDashboard() {
       setAppointments(data.today_appointments || []);
       setStats({
         completed_today: data.completed_today,
-        pending_today: data.pending_today
+        pending_today: data.pending_today,
+        upcoming_count: data.upcoming_count
       });
     } catch (e) {
       console.error(e);
@@ -49,7 +50,7 @@ export function DoctorDashboard() {
         <p className="text-slate-500 dark:text-slate-400 mt-1">Overview of your schedule and practice for today.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-4">
         <Card className="glass-card bg-gradient-to-br from-primary/5 to-indigo-500/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Total Today</CardTitle>
@@ -60,7 +61,7 @@ export function DoctorDashboard() {
         </Card>
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Pending Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold text-amber-500">{stats?.pending_today || 0}</div>
@@ -68,10 +69,18 @@ export function DoctorDashboard() {
         </Card>
         <Card className="glass-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Completed Today</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-bold text-emerald-500">{stats?.completed_today || 0}</div>
+          </CardContent>
+        </Card>
+        <Card className="glass-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Upcoming</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-bold text-blue-500">{stats?.upcoming_count || 0}</div>
           </CardContent>
         </Card>
       </div>

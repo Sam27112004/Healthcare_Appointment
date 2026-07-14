@@ -140,7 +140,12 @@ class AppointmentService:
         # Reload with relationships for response
         stmt = (
             select(Appointment)
-            .options(selectinload(Appointment.slot))
+            .options(
+                selectinload(Appointment.slot),
+                selectinload(Appointment.patient).selectinload(Patient.user),
+                selectinload(Appointment.doctor).selectinload(Doctor.user),
+                selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+            )
             .where(Appointment.id == new_appointment.id)
         )
         created_appt = (await self.db.execute(stmt)).scalar_one()

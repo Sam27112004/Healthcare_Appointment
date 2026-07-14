@@ -41,7 +41,7 @@ export function AppointmentView() {
           <p className="text-slate-500">{appointment.slot?.slot_date} at {appointment.slot?.start_time.substring(0,5)}</p>
         </div>
         
-        {appointment.status === 'scheduled' && (
+        {appointment.status === 'booked' && (
           <Button 
             onClick={() => navigate(`/doctor/appointments/${appointment.id}/consultation`)}
           >
