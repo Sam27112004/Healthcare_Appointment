@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload, joinedload
 from app.models.slot import AppointmentSlot
 from app.models.appointment import Appointment
 from app.models.user import User, Patient, Doctor
+from app.models.consultation import Consultation, Prescription
 from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse, AppointmentCancelResponse, AppointmentRescheduleResponse
 from app.schemas.enums import SlotStatus, AppointmentStatus, Role
 from app.ai.tasks import generate_pre_visit_summary_task
@@ -296,11 +297,13 @@ class AppointmentService:
                 joinedload(Appointment.patient).joinedload(Patient.user),
                 joinedload(Appointment.doctor).joinedload(Doctor.user),
                 joinedload(Appointment.consultation)
+                .joinedload(Consultation.prescription)
+                .joinedload(Prescription.medications)
             )
             .where(Appointment.id == appointment_id)
         )
         result = await self.db.execute(stmt)
-        appointment = result.scalar_one_or_none()
+        appointment = result.unique().scalar_one_or_none()
 
         if not appointment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")

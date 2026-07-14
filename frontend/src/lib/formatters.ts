@@ -32,7 +32,7 @@ export const formatTime = (timeString?: string): string => {
 export const formatStatus = (status?: string): string => {
   if (!status) return 'Unknown';
   switch (status.toLowerCase()) {
-    case 'scheduled': return 'Scheduled';
+    case 'booked': return 'Booked';
     case 'completed': return 'Completed';
     case 'cancelled': return 'Cancelled';
     case 'no_show': return 'No Show';

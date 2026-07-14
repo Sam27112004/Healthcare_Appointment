@@ -50,6 +50,34 @@ class AppointmentSlotDetails(BaseModel):
     class Config:
         from_attributes = True
 
+class MedicationBasic(BaseModel):
+    name: str
+    dosage: str
+    frequency: str
+    duration: str
+    instructions: str | None = None
+    start_date: date
+    end_date: date
+
+    class Config:
+        from_attributes = True
+
+class PrescriptionBasic(BaseModel):
+    notes: str | None = None
+    medications: list[MedicationBasic]
+
+    class Config:
+        from_attributes = True
+
+class ConsultationBasic(BaseModel):
+    diagnosis: str | None = None
+    notes: str
+    follow_up_date: date | None = None
+    prescription: PrescriptionBasic | None = None
+
+    class Config:
+        from_attributes = True
+
 class AppointmentResponse(BaseModel):
     id: uuid.UUID
     patient_id: uuid.UUID
@@ -57,6 +85,7 @@ class AppointmentResponse(BaseModel):
     doctor: DoctorBasic | None = None
     patient: PatientBasic | None = None
     slot: AppointmentSlotDetails
+    consultation: ConsultationBasic | None = None
     status: str
     symptoms: str
     symptom_severity: str | None = None

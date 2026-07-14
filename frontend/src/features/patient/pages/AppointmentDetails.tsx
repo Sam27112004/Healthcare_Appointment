@@ -4,7 +4,7 @@ import { appointmentApi } from '../services/appointmentApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { ArrowLeft, FileText, Activity, XCircle, CalendarClock } from 'lucide-react';
+import { ArrowLeft, FileText, Activity, XCircle, CalendarClock, Pill } from 'lucide-react';
 import { ROUTES } from '../../../config/routes';
 import { toast } from '../../../hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
@@ -141,6 +141,50 @@ export function AppointmentDetails() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Consultation & Prescription Info */}
+        {appointment.consultation && (
+          <Card className="border-none shadow-sm h-fit">
+            <CardHeader className="bg-purple-50 border-b border-purple-100 dark:bg-purple-900/20 dark:border-purple-900">
+              <CardTitle className="flex items-center text-purple-800 dark:text-purple-300">
+                <Pill className="h-5 w-5 mr-2" />
+                Consultation & Prescription
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Diagnosis</p>
+                <p className="mt-1">{appointment.consultation.diagnosis || 'No formal diagnosis recorded'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">Clinical Notes</p>
+                <p className="whitespace-pre-wrap mt-1">{appointment.consultation.notes}</p>
+              </div>
+              
+              {appointment.consultation.prescription?.medications?.length > 0 && (
+                <div className="pt-4 border-t mt-4">
+                  <p className="text-sm font-medium text-slate-500 mb-3">Prescribed Medications</p>
+                  <div className="space-y-3">
+                    {appointment.consultation.prescription.medications.map((med: any, idx: number) => (
+                      <div key={idx} className="bg-slate-50 dark:bg-slate-900 p-3 rounded-md text-sm border">
+                        <p className="font-semibold">{med.name}</p>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-slate-600 dark:text-slate-400">
+                          <p><strong>Dosage:</strong> {med.dosage}</p>
+                          <p><strong>Freq:</strong> {med.frequency}</p>
+                          <p><strong>Duration:</strong> {med.duration}</p>
+                          <p><strong>Period:</strong> {med.start_date} to {med.end_date}</p>
+                        </div>
+                        {med.instructions && (
+                          <p className="mt-2 text-slate-500"><em>"{med.instructions}"</em></p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI Pre-Visit Summary */}
         <Card className="border-none shadow-sm h-fit">

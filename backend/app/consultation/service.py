@@ -41,7 +41,8 @@ class ConsultationService:
                 selectinload(Appointment.slot),
                 selectinload(Appointment.patient).selectinload(Patient.user),
                 selectinload(Appointment.doctor).selectinload(Doctor.user),
-                selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+                selectinload(Appointment.doctor).selectinload(Doctor.specialization),
+                selectinload(Appointment.consultation).selectinload(Consultation.prescription).selectinload(Prescription.medications)
             )
             .join(AppointmentSlot)
             .where(
@@ -84,7 +85,8 @@ class ConsultationService:
             selectinload(Appointment.slot),
             selectinload(Appointment.patient).selectinload(Patient.user),
             selectinload(Appointment.doctor).selectinload(Doctor.user),
-            selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+            selectinload(Appointment.doctor).selectinload(Doctor.specialization),
+            selectinload(Appointment.consultation).selectinload(Consultation.prescription).selectinload(Prescription.medications)
         ).join(AppointmentSlot).where(Appointment.doctor_id == doctor_id)
         
         if status_filter and status_filter.lower() != "all":

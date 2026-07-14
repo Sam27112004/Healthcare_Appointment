@@ -52,6 +52,7 @@ class PatientService:
     async def get_patient_appointments(self, user_id: uuid.UUID, page: int = 1, limit: int = 20) -> dict:
         from app.models.appointment import Appointment
         from app.models.user import Doctor
+        from app.models.consultation import Consultation, Prescription
         from sqlalchemy import func
         
         patient = await self.get_patient_profile(user_id)
@@ -70,7 +71,8 @@ class PatientService:
                 selectinload(Appointment.slot),
                 selectinload(Appointment.patient).selectinload(Patient.user),
                 selectinload(Appointment.doctor).selectinload(Doctor.user),
-                selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+                selectinload(Appointment.doctor).selectinload(Doctor.specialization),
+                selectinload(Appointment.consultation).selectinload(Consultation.prescription).selectinload(Prescription.medications)
             )
             .order_by(Appointment.created_at.desc())
             .offset(offset)

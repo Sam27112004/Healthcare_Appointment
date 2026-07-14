@@ -23,6 +23,7 @@ export function ConsultationForm() {
   const { 
     register: registerNotes, 
     handleSubmit: handleNotesSubmit,
+    getValues: getNotesValues,
     formState: { errors: notesErrors }
   } = useForm({
     defaultValues: {
@@ -59,10 +60,9 @@ export function ConsultationForm() {
       // We need the data from the first form too. In a real app we'd use a unified form state or store,
       // but since we are doing sequential submissions to different endpoints based on the API docs:
       
-      // We'll just grab the values directly from the DOM for simplicity in this demo,
-      // or we can use the backend's complete appointment flow.
-      const diagnosis = (document.getElementById('diagnosis') as HTMLInputElement).value;
-      const notes = (document.getElementById('notes') as HTMLTextAreaElement).value;
+      // We use getNotesValues() to get the current state of the notes form,
+      // avoiding DOM queries which fail because the Notes tab is unmounted!
+      const { diagnosis, notes } = getNotesValues();
 
       // 1. Submit Consultation
       await doctorApi.submitConsultation(appointmentId!, diagnosis, notes);
@@ -81,7 +81,15 @@ export function ConsultationForm() {
 
       navigate(`/doctor/appointments/${appointmentId}`);
     } catch (e: any) {
-      setError(e.response?.data?.detail || 'Failed to submit consultation');
+      let errorMsg = 'Failed to submit consultation';
+      const detail = e.response?.data?.detail;
+      if (typeof detail === 'string') {
+        errorMsg = detail;
+      } else if (Array.isArray(detail) && detail.length > 0) {
+        // Pydantic validation error array
+        errorMsg = `Validation error: ${detail[0].loc.join('.')} - ${detail[0].msg}`;
+      }
+      setError(errorMsg);
       setIsSubmitting(false);
     }
   };
