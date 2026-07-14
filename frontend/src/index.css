@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 40% 98%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -16,7 +16,7 @@
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    --secondary: 214.3 31.8% 91.4%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
@@ -68,10 +68,26 @@
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight text-slate-900 dark:text-slate-50;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-glass;
+  }
+  
+  .glass-card {
+    @apply bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 shadow-premium transition-all duration-300 hover:shadow-glow hover:-translate-y-1;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-indigo-500;
   }
 }

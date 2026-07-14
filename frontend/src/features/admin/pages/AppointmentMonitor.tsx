@@ -46,17 +46,17 @@ export function AppointmentMonitor() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-fade-in-up">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-700">Appointment Monitor</h1>
-          <p className="text-slate-500">Monitor all appointments across the platform.</p>
+          <h1 className="text-3xl font-heading font-extrabold tracking-tight text-gradient">Appointment Monitor</h1>
+          <p className="text-slate-500 mt-1">Monitor all appointments across the platform in real-time.</p>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-slate-500 font-medium">Filter Status:</span>
+        <div className="flex items-center space-x-2 bg-white/50 dark:bg-slate-900/50 p-1.5 rounded-lg border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-sm">
+          <span className="text-sm text-slate-500 font-medium px-2">Status:</span>
           <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setPage(1); }}>
-            <SelectTrigger className="w-[180px] bg-white">
+            <SelectTrigger className="w-[160px] bg-white dark:bg-slate-900 border-none shadow-sm focus:ring-1 focus:ring-primary/20">
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
@@ -70,7 +70,7 @@ export function AppointmentMonitor() {
         </div>
       </div>
 
-      <Card className="border-0 shadow-lg bg-white/60 backdrop-blur-xl overflow-hidden">
+      <Card className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b">

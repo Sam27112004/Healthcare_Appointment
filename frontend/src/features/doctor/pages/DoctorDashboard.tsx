@@ -31,42 +31,46 @@ export function DoctorDashboard() {
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'scheduled': return <Badge variant="default" className="bg-blue-500">{formatStatus(status)}</Badge>;
-      case 'completed': return <Badge variant="default" className="bg-green-500">{formatStatus(status)}</Badge>;
-      case 'cancelled': return <Badge variant="destructive">{formatStatus(status)}</Badge>;
-      default: return <Badge variant="outline">{formatStatus(status)}</Badge>;
+      case 'scheduled': return <Badge variant="default" className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm">{formatStatus(status)}</Badge>;
+      case 'completed': return <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 shadow-sm">{formatStatus(status)}</Badge>;
+      case 'cancelled': return <Badge variant="destructive" className="bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20 shadow-sm">{formatStatus(status)}</Badge>;
+      default: return <Badge variant="outline" className="shadow-sm">{formatStatus(status)}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Doctor Dashboard</h1>
-        <p className="text-slate-500">Overview of your schedule for today.</p>
+        <h1 className="text-3xl font-heading font-extrabold tracking-tight text-slate-900 dark:text-white">Doctor Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 mt-1">Overview of your schedule and practice for today.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card>
+        <Card className="glass-card bg-gradient-to-br from-primary/5 to-indigo-500/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-300">Today's Appointments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{appointments.length}</div>
+            <div className="text-4xl font-extrabold text-primary">{appointments.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Today's Schedule</CardTitle>
+      <Card className="glass-card">
+        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 rounded-t-xl">
+          <CardTitle className="text-xl">Today's Schedule</CardTitle>
           <CardDescription>{format(new Date(), 'MMMM d, yyyy')}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {isLoading ? (
-            <div className="text-center py-8 text-slate-500">Loading schedule...</div>
+            <div className="text-center py-12 text-slate-500 animate-pulse-slow">
+              <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-4" />
+              Loading schedule...
+            </div>
           ) : appointments.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg">
-              You have no appointments scheduled for today.
+            <div className="text-center py-16 text-slate-500 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Schedule Clear</h3>
+              <p>You have no appointments scheduled for today.</p>
             </div>
           ) : (
             <Table>

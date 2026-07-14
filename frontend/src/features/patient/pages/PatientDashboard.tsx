@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { appointmentApi } from '../services/appointmentApi';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../../config/routes';
+import { Calendar } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
@@ -31,36 +32,48 @@ export function PatientDashboard() {
 
   const getStatusBadge = (status: string) => {
     switch(status) {
-      case 'scheduled': return <Badge variant="default" className="bg-blue-500 text-white">{formatStatus(status)}</Badge>;
-      case 'completed': return <Badge variant="default" className="bg-green-500 text-white">{formatStatus(status)}</Badge>;
-      case 'cancelled': return <Badge variant="destructive">{formatStatus(status)}</Badge>;
-      case 'no_show': return <Badge variant="secondary">{formatStatus(status)}</Badge>;
-      default: return <Badge variant="outline">{formatStatus(status)}</Badge>;
+      case 'scheduled': return <Badge variant="default" className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 shadow-sm">{formatStatus(status)}</Badge>;
+      case 'completed': return <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20 shadow-sm">{formatStatus(status)}</Badge>;
+      case 'cancelled': return <Badge variant="destructive" className="bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20 shadow-sm">{formatStatus(status)}</Badge>;
+      case 'no_show': return <Badge variant="secondary" className="bg-slate-500/10 text-slate-600 border border-slate-500/20 hover:bg-slate-500/20 shadow-sm">{formatStatus(status)}</Badge>;
+      default: return <Badge variant="outline" className="shadow-sm">{formatStatus(status)}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end">
+    <div className="space-y-8 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Patient Dashboard</h1>
-          <p className="text-slate-500">Manage your upcoming and past appointments.</p>
+          <h1 className="text-3xl font-heading font-extrabold tracking-tight text-slate-900 dark:text-white">Patient Dashboard</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your upcoming and past appointments seamlessly.</p>
         </div>
-        <Button onClick={() => navigate(ROUTES.DOCTOR_SEARCH)}>Book Appointment</Button>
+        <Button 
+          onClick={() => navigate(ROUTES.DOCTOR_SEARCH)}
+          className="bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 rounded-full px-6"
+        >
+          Book Appointment
+        </Button>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardHeader className="bg-slate-50 border-b">
-          <CardTitle>My Appointments</CardTitle>
-          <CardDescription>View all your health consultations</CardDescription>
+      <Card className="glass-card">
+        <CardHeader className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 rounded-t-xl">
+          <CardTitle className="text-xl">My Appointments</CardTitle>
+          <CardDescription>View and manage all your health consultations</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           {isLoading ? (
-            <div className="text-center py-8 text-slate-500">Loading appointments...</div>
+            <div className="text-center py-12 text-slate-500 animate-pulse-slow">
+              <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto mb-4" />
+              Loading appointments...
+            </div>
           ) : appointments.length === 0 ? (
-            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-              <p>You have no appointments yet.</p>
-              <Button variant="outline" className="mt-4" onClick={() => navigate(ROUTES.DOCTOR_SEARCH)}>
+            <div className="text-center py-16 text-slate-500 bg-slate-50/50 dark:bg-slate-900/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              <div className="bg-white dark:bg-slate-800 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <Calendar className="h-8 w-8 text-primary/50" />
+              </div>
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">No Appointments Yet</h3>
+              <p className="max-w-sm mx-auto text-sm text-slate-500 dark:text-slate-400 mb-6">You haven't booked any appointments. Start your healthcare journey today.</p>
+              <Button onClick={() => navigate(ROUTES.DOCTOR_SEARCH)} className="rounded-full shadow-md">
                 Find a Doctor
               </Button>
             </div>
