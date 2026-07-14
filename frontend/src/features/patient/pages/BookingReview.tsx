@@ -59,7 +59,7 @@ export function BookingReview() {
         clearInterval(interval);
         resetBookingFlow();
         alert('Your slot hold has expired. Please select a slot again.');
-        navigate(`/patient/doctors/${selectedSlot.doctor_id}/slots`);
+        navigate(`/patient/doctors/${selectedSlot?.doctor_id}/slots`);
       }
     }, 1000);
 

@@ -4,14 +4,21 @@ import { appointmentApi } from '../services/appointmentApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { ArrowLeft, FileText, Activity } from 'lucide-react';
+import { ArrowLeft, FileText, Activity, XCircle, CalendarClock } from 'lucide-react';
 import { ROUTES } from '../../../config/routes';
+import { toast } from '../../../hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
+import { Textarea } from '../../../components/ui/textarea';
 
 export function AppointmentDetails() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
   const [appointment, setAppointment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (appointmentId) {
@@ -45,20 +52,73 @@ export function AppointmentDetails() {
     }
   };
 
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      await appointmentApi.cancelAppointment(appointmentId!, cancelReason);
+      toast({ title: 'Appointment Cancelled', description: 'Your appointment has been cancelled successfully.' });
+      setIsCancelModalOpen(false);
+      fetchAppointment(); // Refresh
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Error', description: err.response?.data?.detail || 'Failed to cancel appointment' });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (isLoading) return <div className="p-8 text-center">Loading details...</div>;
   if (!appointment) return <div className="p-8 text-center text-red-500">Appointment not found</div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(ROUTES.PATIENT_DASHBOARD)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Appointment Details</h1>
-          <p className="text-slate-500">Dr. {appointment.doctor?.user?.full_name} • {appointment.slot?.slot_date}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(ROUTES.PATIENT_DASHBOARD)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Appointment Details</h1>
+            <p className="text-slate-500">Dr. {appointment.doctor?.user?.full_name} • {appointment.slot?.slot_date}</p>
+          </div>
         </div>
+        
+        {appointment.status === 'booked' && (
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={() => navigate(`/patient/doctors/${appointment.doctor_id}/slots?reschedule=${appointmentId}`)}>
+              <CalendarClock className="w-4 h-4 mr-2" /> Reschedule
+            </Button>
+            <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)}>
+              <XCircle className="w-4 h-4 mr-2" /> Cancel
+            </Button>
+          </div>
+        )}
       </div>
+
+      <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+            <DialogDescription>Are you sure you want to cancel this appointment? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Reason for cancellation (optional)</p>
+              <Textarea 
+                value={cancelReason} 
+                onChange={(e) => setCancelReason(e.target.value)} 
+                placeholder="Please let us know why you need to cancel..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelModalOpen(false)} disabled={isCancelling}>Keep Appointment</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={isCancelling}>
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel it'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Core Info */}

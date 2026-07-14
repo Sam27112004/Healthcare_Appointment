@@ -11,6 +11,7 @@ from app.admin.service import AdminService
 from app.auth.dependencies import get_db, require_role
 from app.schemas.common import PaginatedResponse
 from app.doctor.schemas import DoctorProfile
+from app.appointment.schemas import AppointmentResponse
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -115,6 +116,16 @@ async def deactivate_doctor(
 
 # ================= Doctor Schedule & Leave =================
 
+@router.get("/doctors/{doctor_id}/schedule", response_model=List[ScheduleResponse], status_code=status.HTTP_200_OK)
+async def get_schedule(
+    doctor_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Get a doctor's schedule."""
+    service = AdminService(db)
+    return await service.get_schedule(doctor_id)
+
 @router.post("/doctors/{doctor_id}/schedule", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED)
 async def create_schedule(
     doctor_id: uuid.UUID,
@@ -179,3 +190,17 @@ async def generate_slots(
         slots_created=slots_created,
         message=f"Successfully generated {slots_created} slots."
     )
+
+# ================= Appointments =================
+
+@router.get("/appointments", response_model=PaginatedResponse[AppointmentResponse], status_code=status.HTTP_200_OK)
+async def list_all_appointments(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    status: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """List all appointments across the system (Admin only)."""
+    service = AdminService(db)
+    return await service.get_all_appointments(page=page, limit=limit, status=status)

@@ -14,5 +14,15 @@ export const patientApi = {
   getSpecializations: async () => {
     const response = await api.get('/specializations');
     return response.data;
+  },
+
+  getProfile: async () => {
+    const response = await api.get('/patients/me');
+    return response.data;
+  },
+
+  updateProfile: async (data: any) => {
+    const response = await api.put('/patients/me', data);
+    return response.data;
   }
 };

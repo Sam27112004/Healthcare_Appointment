@@ -48,7 +48,7 @@ export function ConsultationForm() {
     name: 'medications'
   });
 
-  const onNotesSubmit = async (data: any) => {
+  const onNotesSubmit = async () => {
     setActiveTab('prescription');
   };
 

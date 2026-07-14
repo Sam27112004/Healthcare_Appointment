@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminApi } from '../services/adminApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
@@ -31,6 +31,31 @@ export function ScheduleConfig() {
     }, {} as any)
   );
 
+  useEffect(() => {
+    if (!doctorId) return;
+    const fetchSchedule = async () => {
+      try {
+        const existingSchedules = await adminApi.getSchedule(doctorId);
+        if (existingSchedules && existingSchedules.length > 0) {
+          setSchedule((prev: any) => {
+            const newSchedule = { ...prev };
+            existingSchedules.forEach((s: any) => {
+              newSchedule[s.day_of_week] = {
+                active: true,
+                start_time: s.start_time.substring(0, 5), // e.g., "09:00:00" -> "09:00"
+                end_time: s.end_time.substring(0, 5)
+              };
+            });
+            return newSchedule;
+          });
+        }
+      } catch (e) {
+        console.error('Failed to fetch existing schedule', e);
+      }
+    };
+    fetchSchedule();
+  }, [doctorId]);
+
   const handleToggleDay = (dayId: number, checked: boolean) => {
     setSchedule((prev: any) => ({
       ...prev,
@@ -57,7 +82,7 @@ export function ScheduleConfig() {
             day_of_week: dayId,
             start_time: config.start_time,
             end_time: config.end_time,
-            slot_duration_minutes: 30
+            slot_duration: 30
           });
         }
       });

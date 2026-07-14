@@ -6,7 +6,6 @@ import { Button } from '../../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../../config/routes';
 import { formatDate, formatTime, formatStatus } from '../../../lib/formatters';
 
 export function AppointmentList() {

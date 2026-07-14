@@ -201,6 +201,12 @@ class AdminService:
 
     # ================= Schedule & Leave Management =================
 
+    async def get_schedule(self, doctor_id: uuid.UUID) -> list[DoctorSchedule]:
+        await self._get_doctor_with_rels(doctor_id)
+        stmt = select(DoctorSchedule).where(DoctorSchedule.doctor_id == doctor_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().all()
+
     async def create_schedule(self, doctor_id: uuid.UUID, data: ScheduleCreate) -> DoctorSchedule:
         # Check if doctor exists
         await self._get_doctor_with_rels(doctor_id)
@@ -208,15 +214,17 @@ class AdminService:
         if data.start_time >= data.end_time:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start time must be before end time")
 
-        # Check for overlapping schedules on the same day for this doctor
+        # Delete existing schedules for this day to allow upsert behavior
         stmt = select(DoctorSchedule).where(
             DoctorSchedule.doctor_id == doctor_id,
             DoctorSchedule.day_of_week == data.day_of_week
         )
         existing_schedules = (await self.db.execute(stmt)).scalars().all()
         for sched in existing_schedules:
-            if not (data.end_time <= sched.start_time or data.start_time >= sched.end_time):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Schedule overlaps with an existing schedule for this day")
+            await self.db.delete(sched)
+        
+        # Flush to execute DELETE before INSERT to avoid UniqueViolationError
+        await self.db.flush()
 
         schedule = DoctorSchedule(
             doctor_id=doctor_id,
@@ -419,3 +427,38 @@ class AdminService:
             "total_patients": patient_count or 0,
             "appointments_today": appointments_today or 0
         }
+
+    # ================= Appointments =================
+
+    async def get_all_appointments(self, page: int = 1, limit: int = 20, status: str | None = None) -> PaginatedResponse:
+        stmt = (
+            select(Appointment)
+            .options(
+                joinedload(Appointment.slot),
+                joinedload(Appointment.patient).joinedload(Patient.user),
+                joinedload(Appointment.doctor).joinedload(Doctor.user),
+                joinedload(Appointment.doctor).joinedload(Doctor.specialization)
+            )
+            .join(AppointmentSlot)
+            .order_by(AppointmentSlot.slot_date.desc(), AppointmentSlot.start_time.desc())
+        )
+        
+        if status:
+            stmt = stmt.where(Appointment.status == status)
+            
+        # Count total
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self.db.scalar(count_stmt) or 0
+        
+        # Paginate
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
+        result = await self.db.execute(stmt)
+        items = list(result.scalars().all())
+        
+        return PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            limit=limit,
+            pages=(total + limit - 1) // limit
+        )

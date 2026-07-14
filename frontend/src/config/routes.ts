@@ -5,6 +5,7 @@ export const ROUTES = {
 
   // Patient
   PATIENT_DASHBOARD: '/patient/dashboard',
+  PATIENT_PROFILE: '/patient/profile',
   DOCTOR_SEARCH: '/patient/doctors',
   DOCTOR_PROFILE: '/patient/doctors/:doctorId',
   SLOT_SELECTION: '/patient/doctors/:doctorId/slots',
@@ -22,6 +23,8 @@ export const ROUTES = {
   // Admin
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_DOCTORS: '/admin/doctors',
+  ADMIN_SPECIALIZATIONS: '/admin/specializations',
+  ADMIN_APPOINTMENTS: '/admin/appointments',
   ADMIN_DOCTOR_SCHEDULE: '/admin/doctors/:doctorId/schedule',
   ADMIN_DOCTOR_LEAVES: '/admin/doctors/:doctorId/leaves',
   ADMIN_SETTINGS: '/admin/settings',

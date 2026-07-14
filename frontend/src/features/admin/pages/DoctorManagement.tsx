@@ -6,10 +6,12 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DoctorOnboardingModal } from '../components/DoctorOnboardingModal';
 
 export function DoctorManagement() {
   const [doctors, setDoctors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,10 +36,16 @@ export function DoctorManagement() {
           <h1 className="text-3xl font-bold tracking-tight">Doctors</h1>
           <p className="text-slate-500">Manage hospital medical staff.</p>
         </div>
-        <Button onClick={() => alert('Onboarding wizard not implemented yet')}>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Add Doctor
         </Button>
       </div>
+
+      <DoctorOnboardingModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+        onSuccess={fetchDoctors} 
+      />
 
       <Card>
         <CardHeader>

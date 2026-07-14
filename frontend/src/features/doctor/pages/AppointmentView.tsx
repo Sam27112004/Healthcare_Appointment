@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doctorApi } from '../services/doctorApi';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
-import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { ArrowLeft, FileText, Activity, User } from 'lucide-react';
-import { ROUTES } from '../../../config/routes';
 
 export function AppointmentView() {
   const { appointmentId } = useParams<{ appointmentId: string }>();

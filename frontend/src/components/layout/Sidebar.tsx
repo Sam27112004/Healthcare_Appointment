@@ -15,6 +15,7 @@ export function Sidebar({ role }: SidebarProps) {
           { name: 'Dashboard', href: ROUTES.PATIENT_DASHBOARD, icon: Home },
           { name: 'Find Doctor', href: ROUTES.DOCTOR_SEARCH, icon: Users },
           { name: 'Appointments', href: '/patient/appointments', icon: Calendar },
+          { name: 'Profile', href: ROUTES.PATIENT_PROFILE, icon: Settings },
         ];
       case 'doctor':
         return [
@@ -24,7 +25,9 @@ export function Sidebar({ role }: SidebarProps) {
       case 'admin':
         return [
           { name: 'Dashboard', href: ROUTES.ADMIN_DASHBOARD, icon: Activity },
+          { name: 'Appointments', href: ROUTES.ADMIN_APPOINTMENTS, icon: Calendar },
           { name: 'Doctors', href: '/admin/doctors', icon: Users },
+          { name: 'Specializations', href: ROUTES.ADMIN_SPECIALIZATIONS, icon: Activity },
           { name: 'Settings', href: '/admin/settings', icon: Settings },
         ];
       default:

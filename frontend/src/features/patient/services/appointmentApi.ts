@@ -29,5 +29,15 @@ export const appointmentApi = {
   getPreVisitSummary: async (appointmentId: string) => {
     const response = await api.get(`/appointments/${appointmentId}`);
     return response.data; // Return the full appointment which has pre_visit_summary
+  },
+
+  cancelAppointment: async (appointmentId: string, reason?: string) => {
+    const response = await api.post(`/appointments/${appointmentId}/cancel`, { reason });
+    return response.data;
+  },
+
+  rescheduleAppointment: async (appointmentId: string, newSlotId: string) => {
+    const response = await api.post(`/appointments/${appointmentId}/reschedule`, { new_slot_id: newSlotId });
+    return response.data;
   }
 };

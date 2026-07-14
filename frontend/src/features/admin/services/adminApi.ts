@@ -16,8 +16,28 @@ export const adminApi = {
     return response.data;
   },
 
+  createSpecialization: async (data: { name: string, description?: string }) => {
+    const response = await api.post('/admin/specializations', data);
+    return response.data;
+  },
+
+  updateSpecialization: async (id: string, data: { name: string, description?: string }) => {
+    const response = await api.put(`/admin/specializations/${id}`, data);
+    return response.data;
+  },
+
+  deleteSpecialization: async (id: string) => {
+    const response = await api.delete(`/admin/specializations/${id}`);
+    return response.data;
+  },
+
   getStats: async () => {
     const response = await api.get('/admin/stats');
+    return response.data;
+  },
+
+  getSchedule: async (doctorId: string) => {
+    const response = await api.get(`/admin/doctors/${doctorId}/schedule`);
     return response.data;
   },
   
@@ -31,6 +51,11 @@ export const adminApi = {
       leave_date: date,
       reason
     });
+    return response.data;
+  },
+
+  getAllAppointments: async (params?: { skip?: number, limit?: number, status?: string }) => {
+    const response = await api.get('/admin/appointments', { params });
     return response.data;
   }
 };

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { patientApi } from '../services/patientApi';
 import { appointmentApi } from '../services/appointmentApi';
 import { useAppointmentStore } from '../../../stores/appointmentStore';
 import { ROUTES } from '../../../config/routes';
+import { toast } from '../../../hooks/use-toast';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
@@ -14,6 +15,8 @@ import { format } from 'date-fns';
 export function SlotSelection() {
   const { doctorId } = useParams<{ doctorId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rescheduleAppointmentId = searchParams.get('reschedule');
   
   const [doctor, setDoctor] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -54,6 +57,17 @@ export function SlotSelection() {
   };
 
   const handleSlotClick = async (slot: any) => {
+    if (rescheduleAppointmentId) {
+      try {
+        await appointmentApi.rescheduleAppointment(rescheduleAppointmentId, slot.id);
+        toast({ title: 'Appointment Rescheduled', description: 'Your appointment has been successfully rescheduled.' });
+        navigate(ROUTES.PATIENT_DASHBOARD);
+      } catch (e: any) {
+        toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.detail || 'Failed to reschedule' });
+      }
+      return;
+    }
+
     try {
       await holdSlot(slot);
       navigate(ROUTES.BOOKING_REVIEW);
@@ -67,7 +81,9 @@ export function SlotSelection() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Select a Time Slot</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {rescheduleAppointmentId ? 'Reschedule Appointment' : 'Select a Time Slot'}
+        </h1>
         <p className="text-slate-500">Choose an available time to consult with Dr. {doctor.user?.full_name}</p>
       </div>
 
