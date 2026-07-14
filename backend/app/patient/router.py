@@ -4,6 +4,8 @@ from app.patient.schemas import PatientProfile, PatientUpdate
 from app.patient.service import PatientService
 from app.auth.dependencies import get_db, get_current_user, require_role
 from app.models.user import User
+from app.schemas.common import PaginatedResponse
+from app.appointment.schemas import AppointmentResponse
 
 router = APIRouter(prefix="/patients", tags=["Patient Profile"])
 
@@ -26,7 +28,7 @@ async def update_my_profile(
     service = PatientService(db)
     return await service.update_patient_profile(current_user.id, update_data)
 
-@router.get("/me/appointments", response_model=dict, status_code=status.HTTP_200_OK)
+@router.get("/me/appointments", response_model=PaginatedResponse[AppointmentResponse], status_code=status.HTTP_200_OK)
 async def get_my_appointments(
     page: int = 1,
     limit: int = 20,

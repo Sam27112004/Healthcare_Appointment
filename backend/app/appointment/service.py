@@ -160,11 +160,17 @@ class AppointmentService:
         if not appointment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
 
-        if current_user.role == Role.PATIENT.value and appointment.patient_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
+        if current_user.role == Role.PATIENT.value:
+            patient_stmt = select(Patient).where(Patient.user_id == current_user.id)
+            patient = (await self.db.execute(patient_stmt)).scalar_one_or_none()
+            if not patient or appointment.patient_id != patient.id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
             
-        if current_user.role == Role.DOCTOR.value and appointment.doctor_id != current_user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
+        if current_user.role == Role.DOCTOR.value:
+            doctor_stmt = select(Doctor).where(Doctor.user_id == current_user.id)
+            doctor = (await self.db.execute(doctor_stmt)).scalar_one_or_none()
+            if not doctor or appointment.doctor_id != doctor.id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to cancel this appointment")
 
         if appointment.status == AppointmentStatus.CANCELLED.value:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Appointment is already cancelled")
@@ -205,7 +211,10 @@ class AppointmentService:
         if not appointment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
 
-        if appointment.patient_id != current_user.id:
+        patient_stmt = select(Patient).where(Patient.user_id == current_user.id)
+        patient = (await self.db.execute(patient_stmt)).scalar_one_or_none()
+
+        if not patient or appointment.patient_id != patient.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to reschedule this appointment")
 
         if appointment.status in [AppointmentStatus.CANCELLED.value, AppointmentStatus.COMPLETED.value]:
@@ -236,7 +245,7 @@ class AppointmentService:
             select(Appointment)
             .join(AppointmentSlot, Appointment.slot_id == AppointmentSlot.id)
             .where(
-                Appointment.patient_id == current_user.id,
+                Appointment.patient_id == patient.id,
                 Appointment.id != appointment.id,
                 AppointmentSlot.slot_date == new_slot.slot_date,
                 AppointmentSlot.start_time == new_slot.start_time,

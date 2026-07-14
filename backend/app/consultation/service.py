@@ -77,7 +77,8 @@ class ConsultationService:
         
         stmt = select(Appointment).options(
             selectinload(Appointment.slot),
-            selectinload(Appointment.patient).selectinload(Patient.user)
+            selectinload(Appointment.patient).selectinload(Patient.user),
+            selectinload(Appointment.doctor).selectinload(Doctor.user)
         ).join(AppointmentSlot).where(Appointment.doctor_id == doctor_id)
         
         if status_filter and status_filter.lower() != "all":

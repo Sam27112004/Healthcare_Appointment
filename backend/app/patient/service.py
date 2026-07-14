@@ -68,6 +68,7 @@ class PatientService:
             .where(Appointment.patient_id == patient.id)
             .options(
                 selectinload(Appointment.slot),
+                selectinload(Appointment.patient).selectinload(Patient.user),
                 selectinload(Appointment.doctor).selectinload(Doctor.user),
                 selectinload(Appointment.doctor).selectinload(Doctor.specialization)
             )
@@ -78,31 +79,8 @@ class PatientService:
         result = await self.db.execute(stmt)
         appointments = result.scalars().all()
         
-        formatted_items = []
-        for appt in appointments:
-            formatted_items.append({
-                "id": appt.id,
-                "doctor": {
-                    "id": appt.doctor.id,
-                    "user": {
-                        "full_name": appt.doctor.user.full_name
-                    }
-                },
-                "slot": {
-                    "id": appt.slot.id,
-                    "slot_date": appt.slot.slot_date,
-                    "start_time": appt.slot.start_time,
-                    "end_time": appt.slot.end_time
-                },
-                "status": appt.status,
-                "symptoms": appt.symptoms,
-                "ai_pre_visit_status": appt.ai_pre_visit_status,
-                "ai_post_visit_status": appt.ai_post_visit_status,
-                "created_at": appt.created_at,
-            })
-            
         return {
-            "items": formatted_items,
+            "items": list(appointments),
             "total": total,
             "page": page,
             "limit": limit,

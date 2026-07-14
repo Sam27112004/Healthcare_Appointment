@@ -11,6 +11,8 @@ from app.consultation.schemas import (
 from app.consultation.service import ConsultationService
 from app.auth.dependencies import get_db, require_role
 from app.models.user import User
+from app.schemas.common import PaginatedResponse
+from app.appointment.schemas import AppointmentResponse
 
 router = APIRouter(prefix="/doctor", tags=["Consultation"])
 
@@ -23,7 +25,7 @@ async def get_dashboard(
     service = ConsultationService(db)
     return await service.get_doctor_dashboard(current_user.id)
 
-@router.get("/appointments", status_code=status.HTTP_200_OK)
+@router.get("/appointments", response_model=PaginatedResponse[AppointmentResponse], status_code=status.HTTP_200_OK)
 async def get_appointments(
     status_filter: Optional[str] = Query("all", alias="status"),
     page: int = Query(1, ge=1),

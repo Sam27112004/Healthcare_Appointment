@@ -361,6 +361,20 @@ class AdminService:
         leaves = (await self.db.execute(leave_stmt)).scalars().all()
         leave_dates = {l.leave_date for l in leaves}
 
+        # Delete existing AVAILABLE slots in the range to prevent orphaned slots when schedules change
+        delete_stmt = select(AppointmentSlot).where(
+            AppointmentSlot.doctor_id == doctor_id,
+            AppointmentSlot.slot_date >= start_date,
+            AppointmentSlot.slot_date <= end_date,
+            AppointmentSlot.status == SlotStatus.AVAILABLE.value
+        ).with_for_update()
+        
+        available_slots = (await self.db.execute(delete_stmt)).scalars().all()
+        for slot in available_slots:
+            await self.db.delete(slot)
+            
+        await self.db.flush()
+
         slots_created = 0
         current_date = start_date
 

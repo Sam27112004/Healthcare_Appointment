@@ -51,15 +51,14 @@ async def _apply_pre_visit_fallback(appointment_id: str):
             }
             await db.commit()
 
-@celery_app.task(bind=True, max_retries=settings.AI_MAX_RETRIES, acks_late=True)
+@celery_app.task(bind=True, max_retries=1, acks_late=True)
 def generate_pre_visit_summary_task(self, appointment_id: str):
     try:
         asyncio.run(_generate_pre_visit_summary(appointment_id))
     except Exception as exc:
-        logger.warning(f"Retrying task for appointment {appointment_id} due to {exc}")
+        logger.warning(f"Task failed for appointment {appointment_id} due to {exc}")
         try:
-            # Exponential backoff
-            self.retry(exc=exc, countdown=2 ** self.request.retries)
+            self.retry(exc=exc, countdown=5)
         except self.MaxRetriesExceededError:
             logger.error(f"Max retries exceeded for {appointment_id}. Applying fallback.")
             asyncio.run(_apply_pre_visit_fallback(appointment_id))
@@ -108,14 +107,14 @@ async def _apply_post_visit_fallback(appointment_id: str):
             }
             await db.commit()
 
-@celery_app.task(bind=True, max_retries=settings.AI_MAX_RETRIES, acks_late=True)
+@celery_app.task(bind=True, max_retries=1, acks_late=True)
 def generate_post_visit_summary_task(self, appointment_id: str):
     try:
         asyncio.run(_generate_post_visit_summary(appointment_id))
     except Exception as exc:
-        logger.warning(f"Retrying post-visit task for {appointment_id} due to {exc}")
+        logger.warning(f"Post-visit task failed for {appointment_id} due to {exc}")
         try:
-            self.retry(exc=exc, countdown=2 ** self.request.retries)
+            self.retry(exc=exc, countdown=5)
         except self.MaxRetriesExceededError:
             logger.error(f"Max retries exceeded for {appointment_id}. Applying fallback.")
             asyncio.run(_apply_post_visit_fallback(appointment_id))
