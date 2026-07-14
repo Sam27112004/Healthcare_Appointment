@@ -33,6 +33,7 @@ export function BookingReview() {
 
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const {
     register,
@@ -43,7 +44,7 @@ export function BookingReview() {
   });
 
   useEffect(() => {
-    if (!heldSlotId || !selectedSlot) {
+    if ((!heldSlotId || !selectedSlot) && !isSubmitted) {
       navigate(ROUTES.DOCTOR_SEARCH);
       return;
     }
@@ -63,13 +64,14 @@ export function BookingReview() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [heldSlotId, selectedSlot, holdExpiresAt, navigate, resetBookingFlow]);
+  }, [heldSlotId, selectedSlot, holdExpiresAt, navigate, resetBookingFlow, isSubmitted]);
 
   const onSubmit = async (data: SymptomFormData) => {
     setBookingError(null);
     try {
       setSymptoms(data.symptoms);
       await confirmBooking();
+      setIsSubmitted(true);
       resetBookingFlow();
       navigate(ROUTES.PATIENT_DASHBOARD);
     } catch (err: any) {

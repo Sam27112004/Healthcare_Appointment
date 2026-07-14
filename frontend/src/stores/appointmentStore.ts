@@ -51,7 +51,7 @@ export const useAppointmentStore = create<AppointmentState>((set, get) => ({
 
       set({
         selectedSlot: slot,
-        heldSlotId: heldSlotData.id,
+        heldSlotId: heldSlotData.slot_id,
         holdExpiresAt: expiresAt,
         isLoading: false,
       });
