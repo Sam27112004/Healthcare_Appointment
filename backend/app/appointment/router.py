@@ -11,6 +11,16 @@ from app.models.user import User
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
+@router.get("/{appointment_id}", response_model=AppointmentResponse, status_code=status.HTTP_200_OK)
+async def get_appointment(
+    appointment_id: uuid.UUID,
+    current_user: User = Depends(require_role(["patient", "doctor", "admin"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get detailed appointment info (including symptoms and AI summaries)."""
+    service = AppointmentService(db)
+    return await service.get_appointment(appointment_id, current_user)
+
 @router.post("/hold", response_model=SlotHoldResponse, status_code=status.HTTP_200_OK)
 async def hold_appointment_slot(
     data: SlotHoldRequest,

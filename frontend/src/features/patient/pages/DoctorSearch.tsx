@@ -26,7 +26,7 @@ export function DoctorSearch() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [specializations, setSpecializations] = useState<{ id: string, name: string }[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedSpec, setSelectedSpec] = useState('');
+  const [selectedSpec, setSelectedSpec] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
 
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ export function DoctorSearch() {
     try {
       const data = await patientApi.getDoctors({
         search: search || undefined,
-        specialization: selectedSpec || undefined,
+        specialization_id: selectedSpec === "all" ? undefined : (selectedSpec || undefined),
       });
       setDoctors(data.items || data);
     } catch (e) {
@@ -88,9 +88,9 @@ export function DoctorSearch() {
                   <SelectValue placeholder="All Specializations" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Specializations</SelectItem>
+                  <SelectItem value="all">All Specializations</SelectItem>
                   {specializations.map((spec) => (
-                    <SelectItem key={spec.id} value={spec.name}>
+                    <SelectItem key={spec.id} value={spec.id}>
                       {spec.name}
                     </SelectItem>
                   ))}

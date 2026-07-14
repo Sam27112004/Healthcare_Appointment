@@ -6,9 +6,10 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload, joinedload
 from app.models.specialization import Specialization
-from app.models.user import Doctor, User
+from app.models.user import Doctor, User, Patient
 from app.models.schedule import DoctorSchedule, DoctorLeave
 from app.models.slot import AppointmentSlot
+from app.models.appointment import Appointment
 from app.admin.schemas import (
     SpecializationCreate, SpecializationUpdate, DoctorCreate, DoctorUpdate,
     ScheduleCreate, ScheduleUpdate, LeaveCreate
@@ -397,3 +398,24 @@ class AdminService:
 
         await self.db.commit()
         return slots_created
+
+    async def get_stats(self) -> dict:
+        # Count total doctors
+        doctor_count = await self.db.scalar(select(func.count(Doctor.id)))
+        
+        # Count total patients
+        patient_count = await self.db.scalar(select(func.count(Patient.id)))
+        
+        # Count appointments for today
+        today = datetime.now().date()
+        appointments_today = await self.db.scalar(
+            select(func.count(Appointment.id))
+            .join(AppointmentSlot, Appointment.slot_id == AppointmentSlot.id)
+            .where(AppointmentSlot.slot_date == today)
+        )
+        
+        return {
+            "total_doctors": doctor_count or 0,
+            "total_patients": patient_count or 0,
+            "appointments_today": appointments_today or 0
+        }

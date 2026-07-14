@@ -8,6 +8,7 @@ from app.admin.router import router as admin_router
 from app.appointment.router import router as appointment_router
 from app.consultation.router import router as consultation_router
 from app.calendar.router import router as calendar_router
+from app.specialization.router import router as specialization_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -33,6 +34,7 @@ app.include_router(admin_router, prefix=settings.API_V1_PREFIX)
 app.include_router(appointment_router, prefix=settings.API_V1_PREFIX)
 app.include_router(consultation_router, prefix=settings.API_V1_PREFIX)
 app.include_router(calendar_router, prefix=settings.API_V1_PREFIX)
+app.include_router(specialization_router, prefix=settings.API_V1_PREFIX)
 
 @app.get("/health", tags=["System"])
 async def health_check():

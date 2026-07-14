@@ -7,7 +7,7 @@ export const doctorApi = {
   },
 
   getAppointment: async (appointmentId: string) => {
-    const response = await api.get(`/doctor/appointments/${appointmentId}`);
+    const response = await api.get(`/appointments/${appointmentId}`);
     return response.data; // Full appointment with summaries and symptoms
   },
 

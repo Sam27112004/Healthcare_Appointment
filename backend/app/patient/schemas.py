@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, time, datetime
 from pydantic import BaseModel, Field
 
 class UserSummary(BaseModel):
@@ -31,3 +31,40 @@ class PatientUpdate(BaseModel):
     blood_group: str | None = None
     address: str | None = None
     medical_history: str | None = None
+
+class DoctorSummary(BaseModel):
+    id: uuid.UUID
+    full_name: str
+    specialization: str
+
+    class Config:
+        from_attributes = True
+
+class SlotSummary(BaseModel):
+    id: uuid.UUID
+    slot_date: date
+    start_time: time
+    end_time: time
+
+    class Config:
+        from_attributes = True
+
+class PatientAppointmentResponse(BaseModel):
+    id: uuid.UUID
+    doctor: DoctorSummary
+    slot: SlotSummary
+    status: str
+    symptoms: str
+    ai_pre_visit_status: str | None = None
+    ai_post_visit_status: str | None = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+    
+class PaginatedPatientAppointments(BaseModel):
+    items: list[PatientAppointmentResponse]
+    total: int
+    page: int
+    limit: int
+    pages: int

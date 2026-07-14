@@ -48,3 +48,62 @@ class PatientService:
         await self.db.commit()
         await self.db.refresh(patient)
         return patient
+
+    async def get_patient_appointments(self, user_id: uuid.UUID, page: int = 1, limit: int = 20) -> dict:
+        from app.models.appointment import Appointment
+        from app.models.user import Doctor
+        from sqlalchemy import func
+        
+        patient = await self.get_patient_profile(user_id)
+        offset = (page - 1) * limit
+        
+        # Query total
+        total_stmt = select(func.count(Appointment.id)).where(Appointment.patient_id == patient.id)
+        total_result = await self.db.execute(total_stmt)
+        total = total_result.scalar() or 0
+        
+        # Query items
+        stmt = (
+            select(Appointment)
+            .where(Appointment.patient_id == patient.id)
+            .options(
+                selectinload(Appointment.slot),
+                selectinload(Appointment.doctor).selectinload(Doctor.user),
+                selectinload(Appointment.doctor).selectinload(Doctor.specialization)
+            )
+            .order_by(Appointment.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        appointments = result.scalars().all()
+        
+        formatted_items = []
+        for appt in appointments:
+            formatted_items.append({
+                "id": appt.id,
+                "doctor": {
+                    "id": appt.doctor.id,
+                    "full_name": appt.doctor.user.full_name,
+                    "specialization": appt.doctor.specialization.name if appt.doctor.specialization else "General"
+                },
+                "slot": {
+                    "id": appt.slot.id,
+                    "slot_date": appt.slot.slot_date,
+                    "start_time": appt.slot.start_time,
+                    "end_time": appt.slot.end_time
+                },
+                "status": appt.status,
+                "symptoms": appt.symptoms,
+                "ai_pre_visit_status": appt.ai_pre_visit_status,
+                "ai_post_visit_status": appt.ai_post_visit_status,
+                "created_at": appt.created_at,
+            })
+            
+        return {
+            "items": formatted_items,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit if limit > 0 else 1
+        }

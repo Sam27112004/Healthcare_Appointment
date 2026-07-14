@@ -25,3 +25,14 @@ async def update_my_profile(
     """Update the current patient's profile."""
     service = PatientService(db)
     return await service.update_patient_profile(current_user.id, update_data)
+
+@router.get("/me/appointments", response_model=dict, status_code=status.HTTP_200_OK)
+async def get_my_appointments(
+    page: int = 1,
+    limit: int = 20,
+    current_user: User = Depends(require_role(["patient"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """List the current patient's appointments."""
+    service = PatientService(db)
+    return await service.get_patient_appointments(current_user.id, page, limit)

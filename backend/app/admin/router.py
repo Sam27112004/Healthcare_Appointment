@@ -14,6 +14,17 @@ from app.doctor.schemas import DoctorProfile
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
+# ================= Stats =================
+
+@router.get("/stats", response_model=dict, status_code=status.HTTP_200_OK)
+async def get_stats(
+    db: AsyncSession = Depends(get_db),
+    _ = Depends(require_role(["admin"]))
+):
+    """Get high-level dashboard statistics."""
+    service = AdminService(db)
+    return await service.get_stats()
+
 # ================= Specializations =================
 
 @router.get("/specializations", response_model=List[SpecializationResponse], status_code=status.HTTP_200_OK)

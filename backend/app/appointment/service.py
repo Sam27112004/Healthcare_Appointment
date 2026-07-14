@@ -3,10 +3,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from app.models.slot import AppointmentSlot
 from app.models.appointment import Appointment
-from app.models.user import User
+from app.models.user import User, Patient, Doctor
 from app.appointment.schemas import SlotHoldResponse, AppointmentCreate, AppointmentResponse, AppointmentCancelResponse, AppointmentRescheduleResponse
 from app.schemas.enums import SlotStatus, AppointmentStatus, Role
 from app.ai.tasks import generate_pre_visit_summary_task
@@ -266,3 +266,29 @@ class AppointmentService:
             slot=new_slot,
             previous_slot=old_slot
         )
+
+    async def get_appointment(self, appointment_id: uuid.UUID, current_user: User) -> Appointment:
+        stmt = (
+            select(Appointment)
+            .options(
+                joinedload(Appointment.slot),
+                joinedload(Appointment.patient).joinedload(Patient.user),
+                joinedload(Appointment.doctor).joinedload(Doctor.user),
+                joinedload(Appointment.consultation)
+            )
+            .where(Appointment.id == appointment_id)
+        )
+        result = await self.db.execute(stmt)
+        appointment = result.scalar_one_or_none()
+
+        if not appointment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Appointment not found")
+
+        # Authorization check
+        if current_user.role == "patient" and appointment.patient.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this appointment")
+        
+        if current_user.role == "doctor" and appointment.doctor.user_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this appointment")
+
+        return appointment

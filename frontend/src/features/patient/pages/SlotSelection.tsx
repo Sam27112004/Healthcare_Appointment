@@ -45,7 +45,7 @@ export function SlotSelection() {
     setIsLoadingSlots(true);
     try {
       const data = await appointmentApi.getAvailableSlots(id, dateStr);
-      setSlots(data);
+      setSlots(data.slots || []);
     } catch (e) {
       console.error("Failed to fetch slots");
     } finally {
