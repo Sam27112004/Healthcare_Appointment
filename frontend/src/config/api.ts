@@ -1,22 +1,22 @@
 import axios from 'axios';
-import { useAuthStore } from '../stores/authStore';
+import { toast } from '../hooks/use-toast';
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 // Request interceptor - attach JWT
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
+  // Dynamically import to avoid circular dependency (authStore imports api)
+  const { useAuthStore } = await import('@/stores/authStore');
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
-
-import { toast } from '../hooks/use-toast';
 
 // Response interceptor - handle 401 & Global Error Toast
 api.interceptors.response.use(
@@ -42,6 +42,7 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
+      const { useAuthStore } = await import('@/stores/authStore');
       useAuthStore.getState().logout();
       if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
         window.location.href = '/login';
