@@ -2,6 +2,8 @@
 
 > A production-inspired healthcare appointment platform that manages the complete patient appointment lifecycle — from intelligent scheduling and AI-assisted communication to automated reminders and Google Calendar integration.
 
+**Live Demo**: [https://healthcare-appointment-five.vercel.app](https://healthcare-appointment-five.vercel.app)
+
 ---
 
 ## Table of Contents
