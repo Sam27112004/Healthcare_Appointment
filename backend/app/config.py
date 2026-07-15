@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Literal
 
 
@@ -13,6 +14,27 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def fix_asyncpg_url(cls, v: str) -> str:
+        """Fix database URLs for asyncpg compatibility."""
+        if not v:
+            return v
+        # asyncpg requires postgresql:// instead of postgres://
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql://", 1)
+        
+        # asyncpg doesn't support sslmode, it uses ssl
+        if "?sslmode=" in v or "&sslmode=" in v:
+            v = v.replace("sslmode=", "ssl=")
+            
+        # Ensure it uses the asyncpg driver
+        if v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        return v
+
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30
